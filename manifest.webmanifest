@@ -1,10 +1,10 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Steady Hands Outreach",
   "short_name": "Outreach",
   "description": "Steady Hands outreach and call center",
-  "start_url": "/index.html",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone"
