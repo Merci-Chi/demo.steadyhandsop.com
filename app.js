@@ -2573,7 +2573,10 @@ function callcenterZoneLabel(zone) {
   })[zone] || String(zone || '').replace(/_/g, ' ');
 }
 
-function callcenterClockParts(zone, date = new Date()) {
+// Fixed training-only reference instant: Monday 2026-10-12, 9:00 AM Pacific (PDT).
+// Do not use this clock for real activity timestamps or scheduling.
+const CALLCENTER_DEMO_REFERENCE_TIME = new Date('2026-10-12T16:00:00.000Z');
+function callcenterClockParts(zone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: zone,
     weekday: 'short',
@@ -2585,7 +2588,7 @@ function callcenterClockParts(zone, date = new Date()) {
   return { weekday: get('weekday'), hour: Number(get('hour')) % 24, minute: Number(get('minute')) };
 }
 
-function callcenterCallStatus(phone, storedTimezone, date = new Date()) {
+function callcenterCallStatus(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
   const info = callcenterLeadZone(phone, storedTimezone);
   const p = callcenterClockParts(info.zone, date);
   const minutes = p.hour * 60 + p.minute;
@@ -2620,7 +2623,7 @@ function callcenterCallStatus(phone, storedTimezone, date = new Date()) {
   return { ...info, ...p, minutes, state, label, score };
 }
 
-function callcenterLocalTimeText(phone, storedTimezone, date = new Date()) {
+function callcenterLocalTimeText(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
   const info = callcenterLeadZone(phone, storedTimezone);
   return new Intl.DateTimeFormat('en-US', {
     timeZone: info.zone,
@@ -2634,7 +2637,7 @@ function callcenterLocalTimeText(phone, storedTimezone, date = new Date()) {
   }).format(date);
 }
 
-function callcenterCompactLocalTimeText(phone, storedTimezone, date = new Date()) {
+function callcenterCompactLocalTimeText(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
   const info = callcenterLeadZone(phone, storedTimezone);
   return new Intl.DateTimeFormat('en-US', {
     timeZone: info.zone,
