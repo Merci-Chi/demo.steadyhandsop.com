@@ -1,0 +1,1 @@
+document.addEventListener("DOMContentLoaded",()=>{document.querySelectorAll("form").forEach(f=>f.addEventListener("submit",e=>{e.preventDefault();location.href="index.html"}));document.querySelectorAll("button").forEach(b=>{if(/sign in|log in/i.test(b.textContent))b.addEventListener("click",()=>location.href="index.html")});});

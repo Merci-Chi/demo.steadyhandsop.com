@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Outreach" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Activity</title>
+  <link rel="stylesheet" href="styles.css?v=20261009-activity-skeletons" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-activity">
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>Activity</h1>
+    </div>
+  </header>
+
+  <main class="content" id="activityContent">
+
+    <div class="activity-skeleton" role="status" aria-label="Loading activity" aria-busy="true">
+      <div class="activity-skeleton-stats" aria-hidden="true">
+        <div class="activity-skeleton-stat"><span class="activity-sk activity-sk-icon"></span><span class="activity-sk activity-sk-number"></span><span class="activity-sk activity-sk-label"></span></div><div class="activity-skeleton-stat"><span class="activity-sk activity-sk-icon"></span><span class="activity-sk activity-sk-number"></span><span class="activity-sk activity-sk-label"></span></div><div class="activity-skeleton-stat"><span class="activity-sk activity-sk-icon"></span><span class="activity-sk activity-sk-number"></span><span class="activity-sk activity-sk-label"></span></div>
+      </div>
+      <div class="activity-skeleton-tools" aria-hidden="true">
+        <span class="activity-sk activity-sk-search"></span>
+        <div class="activity-skeleton-filters"><span class="activity-sk activity-sk-filter" style="width:92px"></span><span class="activity-sk activity-sk-filter" style="width:105px"></span><span class="activity-sk activity-sk-filter" style="width:121px"></span><span class="activity-sk activity-sk-filter" style="width:75px"></span><span class="activity-sk activity-sk-filter" style="width:104px"></span></div>
+      </div>
+      <div class="activity-skeleton-section" aria-hidden="true">
+        <div class="activity-skeleton-title"><span class="activity-sk activity-sk-heading"></span><span class="activity-sk activity-sk-view"></span></div>
+        <div class="activity-skeleton-list"><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span><span class="activity-sk activity-sk-detail short"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span><span class="activity-sk activity-sk-detail short"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span><span class="activity-sk activity-sk-detail short"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span><span class="activity-sk activity-sk-detail short"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span><span class="activity-sk activity-sk-detail short"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div></div>
+      </div>
+      <div class="activity-skeleton-section" aria-hidden="true">
+        <div class="activity-skeleton-title"><span class="activity-sk activity-sk-heading"></span><span class="activity-sk activity-sk-view"></span></div>
+        <div class="activity-skeleton-list"><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div><div class="activity-skeleton-row"><span class="activity-sk activity-sk-avatar"></span><div class="activity-skeleton-info"><span class="activity-sk activity-sk-business"></span><span class="activity-sk activity-sk-detail"></span></div><div class="activity-skeleton-right"><span class="activity-sk activity-sk-date"></span><span class="activity-sk activity-sk-status"></span></div></div></div>
+      </div>
+      <span class="sr-only">Loading call history and follow-ups…</span>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
+    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
+    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
+    <a class="nav-item active" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
+    <a class="nav-item" href="account.html"><i data-lucide="user-round"></i><span>Account</span></a>
+  </nav>
+</div>
+
+<script src="demo-leads.js"></script>
+<script src="demo-runtime.js"></script>
+<script src="auth-guard.js?v=20261005-dark-mode"></script>
+<script src="user-data.js?v=20261005-recent-calls"></script>
+<script src="app.js?v=20261001-activity2"></script>
+</body>
+</html>

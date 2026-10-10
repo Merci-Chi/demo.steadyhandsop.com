@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102a56"><title>Log In | Steady Hands Outreach</title>
+<link rel="icon" href="https://onboard.steadyhandsop.com/images/logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png">
+<link rel="stylesheet" href="login-onboard.css?v=20261010-controls-v2">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+</head><body>
+<div id="outreachIntro" class="outreach-intro" aria-hidden="true">
+  <div class="outreach-intro-brand"><img src="images/icon-192.png" alt="" /><span>STEADY HANDS</span></div>
+</div>
+<script>
+(() => {
+  const layer = document.getElementById('outreachIntro');
+  if (!layer) return;
+  let skip = false;
+  try {
+    skip = sessionStorage.getItem('steadyhands-outreach-intro-shown') === '1';
+    sessionStorage.setItem('steadyhands-outreach-intro-shown', '1');
+  } catch {}
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (skip || reduceMotion) { layer.remove(); return; }
+  window.setTimeout(() => {
+    layer.classList.add('is-leaving');
+    window.setTimeout(() => layer.remove(), 520);
+  }, 1650);
+})();
+</script>
+
+<div class="auth-layout">
+<section class="brand-side">
+<a class="brand-link" href="https://steadyhandsop.com"><img class="brand-logo" src="https://onboard.steadyhandsop.com/images/logo.png" alt=""><img class="brand-wordmark" src="https://onboard.steadyhandsop.com/images/wordmark-white.png" alt="Steady Hands"></a>
+<div class="brand-copy"><p class="eyebrow">STEADY HANDS TEAM OUTREACH</p><h1>We run the site.<span class="tagline-art" role="img" aria-label="You run the show."></span></h1><p>Connect with businesses, manage your leads, and keep your outreach organized—all in one place.</p></div>
+<img class="wave" src="https://onboard.steadyhandsop.com/images/background.jpg" alt="">
+</section>
+<main class="auth-side"><div class="auth-card">
+<div class="mobile-brand"><img src="https://onboard.steadyhandsop.com/images/logo.png" alt=""> Steady Hands</div>
+<p class="eyebrow">YOUR WORKSPACE</p>
+<h2 id="loginHeading">Welcome back</h2>
+<p id="loginSubheading" class="sub">Sign in to access your Steady Hands Outreach.</p>
+<form id="loginForm" class="login-form">
+<label for="loginEmail">Email address</label><input id="loginEmail" type="email" name="email" placeholder="you@company.com" autocomplete="username" required>
+<label for="loginPassword">Password</label><div class="password-wrap"><input id="loginPassword" type="password" name="password" placeholder="Enter your password" autocomplete="current-password" required><button id="showPassword" type="button" aria-label="Show password">Show</button></div>
+<div class="outreach-login-options"><label class="outreach-check-label"><input type="checkbox" id="saveEmailToDevice"><span class="outreach-check-box" aria-hidden="true">✓</span><span>Save email to this device</span></label>
+<label class="outreach-check-label terms-option" for="agreeToTerms"><input id="agreeToTerms" type="checkbox"><span class="outreach-check-box" aria-hidden="true">✓</span><span>I agree to the <a id="termsLink" href="terms.html">Terms &amp; Conditions</a>.</span></label>
+<div class="terms-validation" id="termsValidation" role="alert">This box must be checked to continue.</div>
+<div id="loginMessage" role="status" aria-live="polite"></div>
+</div><button id="signInButton" class="primary-button full outreach-login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button><button class="text-btn outreach-forgot" id="forgotPassword" type="button">Forgot password?</button>
+</form><p class="foot outreach-login-foot">Authorized team access only</p>
+</div></main></div>
+<script src="demo-leads.js"></script>
+<script src="demo-runtime.js"></script>
+<script src="login.js?v=20261003-terms-validation"></script>
+</body></html>
