@@ -1660,6 +1660,35 @@ function setupOutreach() {
     e.stopPropagation();
     if (queueTransition) return;
 
+    // Offline training: pick a DIFFERENT lead from the local, eligible cards.
+    // The live implementation below relies on preview_inventory; don't use it
+    // for fictional leads, and don't reload the page.
+    if (window.steadyHandsDemo) {
+      const currentId = String(selectedCard?.dataset.crmId || selectedLeadTop?.querySelector('.lead-card')?.dataset.crmId || '');
+      const candidates = originalOrder.filter(card =>
+        card.dataset.notInterested !== 'true' &&
+        String(card.dataset.crmId || '') !== currentId
+      );
+      if (!candidates.length) {
+        showToast('No other demo leads available.');
+        return;
+      }
+      const nextCard = candidates[Math.floor(Math.random() * candidates.length)];
+      changeLeads(() => {
+        selectedCard = nextCard;
+        // Refresh the order of the unselected leads, too. The selected lead
+        // stays outside the queue and the original 10-card limit is preserved.
+        const remaining = callcenterShuffle(originalOrder.filter(card => card !== nextCard));
+        originalOrder.splice(0, originalOrder.length, nextCard, ...remaining);
+        renderQueue(false);
+        window.callcenterSetResumeLocation?.(
+          `index.html?crm_id=${encodeURIComponent(nextCard.dataset.crmId)}`,
+          companyName(nextCard)
+        );
+      });
+      return;
+    }
+
     const client = window.steadyHandsCRMClient;
     if (!client) {
       showToast('Unable to load a random lead.');
