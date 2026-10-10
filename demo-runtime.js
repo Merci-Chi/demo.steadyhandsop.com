@@ -45,8 +45,6 @@
  window.steadyHandsResetDemo=()=>{localStorage.removeItem(KEY);location.replace('index.html')};
  // Suppress demo network writes: this build does not ship live calling or Edge Functions.
  window.addEventListener('DOMContentLoaded',()=>{
-   document.body.insertAdjacentHTML('afterbegin','<div id="demoBanner" style="position:relative;z-index:10000;background:#1d73bb;color:white;text-align:center;font:700 12px system-ui;padding:7px">TRAINING DEMO — Fictional businesses · No real calls or payments <button id="demoReset" style="margin-left:12px;background:white;color:#13416d;border:0;border-radius:5px;padding:4px 8px;cursor:pointer">Reset Demo</button></div>');
-   document.getElementById('demoReset')?.addEventListener('click',()=>{if(confirm('Clear all demo practice data?'))window.steadyHandsResetDemo()});
    if(document.body.classList.contains('page-call')){
     ['hangupBtn','enableLiveTranscript'].forEach(id=>{const b=document.getElementById(id);if(b){b.disabled=true;b.title='Live calling and transcription disabled in demo';b.style.opacity='.5'}});
     const txt=document.querySelector('#transcriptSection p');if(txt)txt.textContent='Live transcription is disabled in this offline demo.';
