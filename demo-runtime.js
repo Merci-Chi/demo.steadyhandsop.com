@@ -2,16 +2,19 @@
 (() => {
  'use strict';
  const KEY = 'steadyhands-offline-demo-v1';
- const user={id:'demo-user',email:'demo@steadyhands.example',user_metadata:{full_name:'Demo Trainee'}};
+ const user={id:'demo-user',email:'demo@steadyhands.example',user_metadata:{full_name:'User'}};
  const session={user,access_token:'offline-demo-only'};
  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
  function write(data){localStorage.setItem(KEY,JSON.stringify(data))}
  const seeds=()=>window.STEADY_HANDS_DEMO_LEADS||[];
- function table(name){const s=read();if(name==='crm')return seeds().map(x=>({...x,...(s.crm||{})[x.id]}));
+ function table(name){const s=read();if(name==='crm')return seeds().map(x=>({...x,...(window.STEADY_HANDS_DEMO_HISTORY.callbacks||{})[x.id],...(s.crm||{})[x.id]}));
   if(name==='preview_inventory')return seeds().map(x=>({url:x.previewurl,crm_id:x.id}));
   if(name==='site_keys')return seeds().map(x=>({sitekey:x.sitekey,site_key:x.sitekey,url:x.previewurl,previewurl:x.previewurl}));
+  if(name==='callcenter_call_activity')return [...(s[name]||[]),...window.STEADY_HANDS_DEMO_HISTORY.calls].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  if(name==='callcenter_transcripts')return [...(s[name]||[]),...window.STEADY_HANDS_DEMO_HISTORY.transcripts];
+  if(name==='callcenter_commissions')return [...(s[name]||[]),...window.STEADY_HANDS_DEMO_HISTORY.commissions];
   if(name==='team_permissions')return [{user_id:user.id,role:'ADMIN',active:true}];
-  if(name==='callcenter_profiles')return [{user_id:user.id,id:user.id,full_name:'Demo Trainee',name:'Demo Trainee',assigned_state:'NV',assigned_timezone:'America/Los_Angeles',referral_code:'DEMO-ONLY',active:true,onboarding_completed:true,created_at:new Date().toISOString(),last_call_at:new Date().toISOString(),disabled_at:null}];
+  if(name==='callcenter_profiles')return [{user_id:user.id,id:user.id,full_name:'User',display_name:'User',name:'User',email:'demo@steadyhands.example',assigned_state:'NV',assigned_timezone:'America/Los_Angeles',referral_code:'DEMO-ONLY',active:true,onboarding_completed:true,created_at:new Date().toISOString(),last_call_at:new Date().toISOString(),disabled_at:null}];
   return s[name]||[];
  }
  class Query {
@@ -43,6 +46,15 @@
  const client={auth:{getSession:async()=>({data:{session},error:null}),getUser:async()=>({data:{user},error:null}),signOut:async()=>({error:null}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),signInWithPassword:async()=>({data:{session,user},error:null}),resetPasswordForEmail:async()=>({error:null}),updateUser:async()=>({data:{user},error:null})},from:n=>new Query(n),rpc:async n=>({data:n==='callcenter_unavailable_leads'?[]:[],error:null}),functions:{invoke:async()=>({data:null,error:{message:'Disabled in offline demo'}})},channel:()=>({on(){return this},subscribe(){return this},unsubscribe(){}}),storage:{from:()=>({upload:async()=>({error:{message:'Demo only'}}),getPublicUrl:()=>({data:{publicUrl:''}})})}};
  window.supabase={createClient:()=>client};window.steadyHandsCRMClient=client;window.steadyHandsDemo=true;
  window.steadyHandsResetDemo=()=>{localStorage.removeItem(KEY);location.replace('index.html')};
+ // Remove legacy top-of-page notice even if old code inserts it late.
+ function removeOldDemoNotice(){
+   const banner=document.getElementById('demoBanner');
+   if(banner) banner.remove();
+ }
+ removeOldDemoNotice();
+ const demoNoticeObserver=new MutationObserver(removeOldDemoNotice);
+ demoNoticeObserver.observe(document.documentElement,{childList:true,subtree:true});
+
  // Suppress demo network writes: this build does not ship live calling or Edge Functions.
  window.addEventListener('DOMContentLoaded',()=>{
    if(document.body.classList.contains('page-call')){

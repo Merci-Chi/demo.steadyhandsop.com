@@ -1,2 +1,7 @@
 STEADY HANDS OUTREACH - OFFLINE DEMO
 50 fictional leads, 10 visible per normal page behavior. The original HTML/CSS layouts are retained. Data and practice changes are stored locally in your browser. No Supabase SDK, live CRM, phone service or payments are included. For best results serve this directory through a local HTTP server (python3 -m http.server 8000), then open http://localhost:8000/index.html. Do not deploy on the production domain. This is an adapted demo and not all backend-powered actions can operate offline.
+
+NEW: Fake example call history, sample transcripts with call insights, and sample earnings for User.
+The Activity page's captions icon opens the transcript and its sample insights.
+No actual calls, payments, or customer information are included.
+Clear site data to reset user-entered practice outcomes.

@@ -1390,6 +1390,7 @@
             </div>
             <button type="button" class="activity-transcript-close" aria-label="Close transcript"><i data-lucide="x"></i></button>
           </div>
+          ${window.steadyHandsDemo && row.insights ? `<div class="demo-call-insights"><strong>Call Insights · Fictional example</strong><p><b>Interest level:</b> ${esc(row.insights.interest)}</p><p><b>Summary:</b> ${esc(row.insights.summary)}</p><p><b>Objection:</b> ${esc(row.insights.objection)}</p><p><b>Next step:</b> ${esc(row.insights.next_step)}</p></div>` : ''}
           <div class="activity-transcript-copy">${esc(String(row.transcript || 'No transcript text was captured.')).replace(/\n/g,'<br>')}</div>
         </section>`;
       document.body.appendChild(overlay);

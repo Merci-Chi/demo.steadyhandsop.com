@@ -5014,3 +5014,8 @@ body.page-outreach .outreach-controls #crmLiveTotals {
     margin-left: 0;
   }
 }
+
+/* Offline example call insight panel */
+.demo-call-insights{margin:12px 0;padding:14px;border-radius:14px;background:var(--surface,#edf4fd);border:1px solid rgba(70,120,180,.23);font-size:13px;line-height:1.6;color:var(--text,#1a3353)}
+.demo-call-insights>strong{display:block;font-size:14px;margin-bottom:9px}.demo-call-insights p{margin:6px 0}.demo-call-insights b{font-weight:800}
+body.dark .demo-call-insights,body[data-theme="dark"] .demo-call-insights{background:#192b42;color:#f4f8ff}
