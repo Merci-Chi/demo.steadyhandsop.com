@@ -134,7 +134,7 @@
       if (!window.supabase) throw new Error('Sign-in library unavailable');
 
       const client = window.steadyHandsCRMClient || window.supabase.createClient(
-        'https://invalid.example',
+        'https://glonbvrcudwuzjundrii.supabase.co',
         'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr',
         {
           auth: {
@@ -152,6 +152,21 @@
 
       if (!data.session) {
         location.replace('login.html');
+        return;
+      }
+
+      // A persistent, account-level first-login check. Existing employees aren't forced
+      // through a new password setup after this feature is deployed.
+      const isOnboardingPage = currentPageName() === 'onboarding.html';
+      const joinedAt = Date.parse(data.session.user?.created_at || '') || 0;
+      const rollout = Date.parse('2026-10-11T00:00:00Z');
+      const requiresSetup = joinedAt >= rollout && data.session.user?.user_metadata?.steadyhands_onboarding_complete !== true;
+      if (requiresSetup && !isOnboardingPage) {
+        location.replace('onboarding.html');
+        return;
+      }
+      if (!requiresSetup && isOnboardingPage) {
+        location.replace('index.html');
         return;
       }
 

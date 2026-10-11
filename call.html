@@ -13,10 +13,40 @@
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
   <title>Call</title>
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="styles.css?v=20261011-demo-call-design" />
+  <link rel="stylesheet" href="styles.css?v=20261009-unified-dark" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  
+  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
+  <link rel="stylesheet" href="sidebar.css?v=batch2" />
+  <link rel="stylesheet" href="sale-start.css?v=2" />
+  <link rel="stylesheet" href="call-compact.css?v=20261011-icon-circle-rebuild" />
+  <link rel="stylesheet" href="external-call.css?v=20261011-1" />
+  <style>
+    /* Demo call page: keep the original two-column workspace, with no stray mode panel. */
+    body.page-call .calling-mode-selector, body.page-call #regularPhonePanel { display:none!important; }
+    /* The shared sidebar inserts its menu toggle before Back: four header cells. */
+    @media (min-width:900px){
+      body.page-call .call-topbar{
+        display:grid!important;
+        grid-template-columns:48px 48px minmax(0,1fr) 48px!important;
+        gap:12px!important;
+        align-items:center!important;
+      }
+      body.page-call .call-topbar > .sh-sidebar-toggle{grid-column:1!important;margin:0!important;}
+      body.page-call .call-topbar > #callBack{grid-column:2!important;}
+      body.page-call .call-topbar > #callCompanyHeader{
+        grid-column:3!important;grid-row:1!important;
+        width:100%!important;min-width:0!important;
+        overflow:hidden!important;text-overflow:ellipsis!important;
+        white-space:nowrap!important;text-align:center!important;
+        color:#fff!important;
+      }
+      body.page-call .call-topbar > .call-business-icon{grid-column:4!important;grid-row:1!important;}
+      body.page-call .call-content{grid-template-rows:auto auto auto auto auto!important;}
+    }
+  </style>
+  <script src="sidebar.js?v=batch9-menu-fix-1" defer></script>
+<link rel="stylesheet" href="first-login.css?v=1" />
 </head>
 <body class="page-call">
 <div class="app call-app">
@@ -27,6 +57,13 @@
   </header>
 
   <main class="call-content">
+    <section class="calling-mode-selector" aria-label="Calling method">
+      <div class="calling-mode-title"><strong>Calling method</strong><span>Calls are simulated in this demo</span></div>
+      <div class="calling-mode-options" role="group" aria-label="Choose calling method">
+        <button type="button" id="regularPhoneMode" class="calling-mode-choice" aria-pressed="false"><i data-lucide="smartphone"></i> Regular Phone</button>
+        <button type="button" id="appPhoneMode" class="calling-mode-choice" aria-pressed="true"><i data-lucide="headset"></i> Call Through App</button>
+      </div>
+    </section>
     <section class="call-identity">
       <div class="call-avatar"><i data-lucide="user-round"></i></div>
       <div class="call-number" id="callNumber">(000) 000-0000</div>
@@ -42,14 +79,27 @@
       <button class="call-action-card" data-call-action="Templates"><span class="call-action-icon"><i data-lucide="messages-square"></i></span><span>Templates</span></button>
       <button class="call-action-card" data-call-action="Quick Info"><span class="call-action-icon"><i data-lucide="circle-dollar-sign"></i></span><span>Quick Info</span></button>
     </section>
-    <section class="call-controls demo-call-controls" aria-label="Demo call controls">
-      <button class="call-control small" id="muteBtn"><span class="demo-icon-bubble" aria-hidden="true"><i data-lucide="mic"></i></span><span>Mute</span></button>
-      <button class="call-control small" id="keypadBtn"><span class="demo-icon-bubble" aria-hidden="true"><i data-lucide="grid-3x3"></i></span><span>Keypad</span></button>
-      <button class="call-control start-call" id="hangupBtn" type="button" aria-label="Start demo call"><span class="demo-main-icon" aria-hidden="true"><i data-lucide="phone"></i></span><span>Start Demo Call</span></button>
-      <button class="call-control small" id="holdBtn"><span class="demo-icon-bubble" aria-hidden="true"><i data-lucide="pause"></i></span><span>Hold</span></button>
-      <button class="call-control small" id="speakerBtn"><span class="demo-icon-bubble" aria-hidden="true"><i data-lucide="volume-2"></i></span><span>Speaker</span></button>
+    <button class="sh-start-sale" id="shStartSale" type="button"><i data-lucide="handshake"></i><span>Start Sale / Track Customer</span><i data-lucide="arrow-right"></i></button>
+    <section id="regularPhonePanel" class="regular-phone-panel" hidden aria-label="Regular phone calling">
+      <div class="regular-phone-header"><i data-lucide="smartphone"></i><div><strong>Call using your phone</strong><p>Calls made outside this app cannot be automatically verified or transcribed.</p></div></div>
+      <div class="regular-phone-number" id="regularPhoneNumber"></div>
+      <div class="regular-phone-actions">
+        <a id="externalDialerLink" class="regular-phone-dial" href="tel:"><i data-lucide="phone-outgoing"></i> Open Phone Dialer</a>
+        <button id="externalCopyNumber" type="button" class="regular-phone-secondary"><i data-lucide="copy"></i> Copy Number</button>
+      </div>
+      <button id="externalLogCall" class="regular-phone-log" type="button"><i data-lucide="clipboard-check"></i> Log Call / Record Outcome</button>
+      <p class="regular-phone-disclaimer">Opening the dialer or copying the number does not log a call. Tap Log Call when you're ready to record what happened.</p>
+    </section>
+    <section class="call-controls">
+      <button class="call-control small" id="muteBtn"><i data-lucide="mic"></i><span>Mute</span></button>
+      <button class="call-control small" id="keypadBtn"><i data-lucide="grid-3x3"></i><span>Keypad</span></button>
+      <button class="call-control start-call" id="hangupBtn" aria-label="Start call"><i data-lucide="phone"></i><span>Start Call</span></button>
+      <button class="call-control small" id="holdBtn"><i data-lucide="pause"></i><span>Hold</span></button>
+      <button class="call-control small" id="speakerBtn"><i data-lucide="volume-2"></i><span>Speaker</span></button>
     </section>
     <section class="starter-script-card" id="starterScriptCard">
+      <button class="call-script-toggle" type="button" aria-expanded="false" aria-controls="callScriptBody"><i data-lucide="book-open"></i><span>Starter Script</span><i data-lucide="chevron-down"></i></button>
+      <div class="call-script-body" id="callScriptBody">
       <div class="starter-script-head">
         <div>
           <span>Starter Script</span>
@@ -64,21 +114,22 @@
         <button class="starter-script-tab" type="button" data-script="spanish">Spanish</button>
       </div>
       <p class="starter-script-text" id="starterScriptText"></p>
+      </div>
     </section>
 
     <section class="call-transcript-section" id="transcriptSection">
       <div class="live-transcript-head">
         <div>
           <h2>Transcript</h2>
-          <p>Transcribes both sides of the Twilio call in real time.</p>
+          <p>Displays a fictional conversation during your simulated call.</p>
         </div>
         <button class="live-transcript-enable" id="enableLiveTranscript" type="button"><i data-lucide="mic"></i> Enable Live Transcript</button>
       </div>
 
       <div class="live-transcript-permission" id="liveTranscriptPermission">
-        <strong>Enable live transcript?</strong>
-        <p>Enable this before dialing to show both your speech and the customer's speech here while the call is active.</p>
-        <small>Powered by Twilio Real-Time Transcriptions.</small>
+        <strong>Enable demo transcript?</strong>
+        <p>Start a simulated call, then press Start Demo Transcript to display a fictional conversation.</p>
+        <small>No audio is recorded or transmitted.</small>
       </div>
 
       <div class="call-transcript-card">
@@ -86,30 +137,158 @@
           <div class="live-transcript-empty" id="liveTranscriptEmpty">No transcript yet.</div>
         </div>
         <div class="transcript-listening" id="liveTranscriptStatus">
-          <i data-lucide="mic"></i><span>Live transcript is off</span><i data-lucide="audio-lines"></i>
+          <i data-lucide="mic"></i><span>Demo transcript is off</span><i data-lucide="audio-lines"></i>
         </div>
       </div>
     </section>
   </main>
 </div>
 
-<script src="demo-leads.js"></script>
-<script src="demo-history.js"></script>
-<script src="demo-runtime.js?v=20261010-no-banner"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.querySelector('.call-script-toggle');
+  const card = document.getElementById('starterScriptCard');
+  if(!btn || !card) return;
+  btn.addEventListener('click', function(){
+    const open = card.classList.toggle('script-expanded');
+    btn.setAttribute('aria-expanded',String(open));
+  });
+});
+</script>
+<script src="demo-data.js?v=20261011-demo3"></script>
 <script src="auth-guard.js?v=20261005-dark-mode"></script>
-<script src="user-data.js?v=20261005-call-diagnostics"></script>
-<script src="app.js?v=20261003-recipient-timezone-fix"></script>
-
-
+<script src="user-data.js?v=20261011-csv2"></script>
+<script src="app.js?v=20261011-demo3"></script>
+<script src="demo-calling.js?v=1"></script>
+<script>
+/* Local demo tools: preserve original call-screen modal appearance without live services. */
+(function(){
+  const labels = new Set(['Tags','Notes','Alerts']);
+  const options = ['Broken Site','Outdated Site','Site Removed','Already have a website','Spanish?','Hot Lead','Interested','Call Back','Needs More Info','Skeptical','No Answer','Left Voicemail','Not Interested','Wrong Number','Conversion','Sold'];
+  const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function record(){
+    const params = new URLSearchParams(location.search);
+    const db = window.SteadyHandsDemo?.data;
+    const id = params.get('crm_id');
+    const name = params.get('company');
+    const lead = db?.crm?.find(r => String(r.id) === String(id)) || db?.crm?.find(r => r.company === name);
+    return {db, lead, id: String(lead?.id || id || name || 'demo-lead')};
+  }
+  function persist(){window.SteadyHandsDemo?.save?.()}
+  function modal(title, body){
+    document.querySelector('.call-tool-overlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.className='call-tool-overlay';
+    overlay.innerHTML='<section class="call-tool-sheet" role="dialog" aria-modal="true"><div class="call-tool-grabber"></div><div class="call-tool-head"><h2>'+title+'</h2><button class="call-tool-close" type="button" aria-label="Close"><i data-lucide="x"></i></button></div><div class="call-tool-body">'+body+'</div></section>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('.call-tool-close').addEventListener('click',()=>overlay.remove());
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+    window.lucide?.createIcons?.();
+    return overlay;
+  }
+  function openTools(label){
+    const {db,lead,id} = record();
+    // In case this call was opened without a CRM id, keep changes in dedicated local demo storage.
+    let backup={};
+    try{backup=JSON.parse(localStorage.getItem('steadyhands-demo-call-tools')||'{}')}catch{}
+    const stored=backup[id] || {};
+    function commit(key,value){
+      if(lead){lead[key]=value;persist()}
+      else {backup[id]={...stored,[key]:value};localStorage.setItem('steadyhands-demo-call-tools',JSON.stringify(backup))}
+    }
+    if(label==='Tags'){
+      let current=lead?.tags ?? stored.tags ?? [];
+      if(typeof current==='string'){try{current=JSON.parse(current)}catch{current=[current]}}
+      const selected=new Set(Array.isArray(current)?current:[]);
+      const overlay=modal('Tags','<p class="call-tool-help">Tap tags to turn them on or off for this lead.</p><div class="call-tool-tag-picker">'+options.map(tag=>'<button type="button" class="call-tag-choice '+(selected.has(tag)?'selected':'')+'" data-tag-choice="'+escapeHTML(tag)+'"><i data-lucide="check"></i>'+escapeHTML(tag)+'</button>').join('')+'</div><button class="call-tool-primary" id="saveLeadTags" type="button">Save Tags</button>');
+      overlay.querySelectorAll('[data-tag-choice]').forEach(button=>button.addEventListener('click',()=>{const tag=button.dataset.tagChoice;selected.has(tag)?selected.delete(tag):selected.add(tag);button.classList.toggle('selected',selected.has(tag))}));
+      overlay.querySelector('#saveLeadTags').addEventListener('click',()=>{commit('tags',[...selected]);overlay.remove()});
+    } else if(label==='Notes'){
+      const overlay=modal('Notes','<textarea class="call-tool-textarea" id="callLeadNotes" placeholder="Add notes…">'+escapeHTML(lead?.notes??stored.notes??'')+'</textarea><button class="call-tool-primary" id="saveCallLeadNotes" type="button">Save Notes</button>');
+      overlay.querySelector('#saveCallLeadNotes').addEventListener('click',()=>{commit('notes',overlay.querySelector('#callLeadNotes').value.trim());overlay.remove()});
+    } else if(label==='Alerts'){
+      const list=db?.outreach_notes_alerts || [];
+      const existing=list.filter(r=>String(r.crmid)===id && r.kind==='alert');
+      const overlay=modal('Alerts','<div class="call-alert-form"><input class="call-tool-input" id="newAlertTitle" placeholder="Alert title"><textarea class="call-tool-textarea call-alert-textarea" id="newAlertDescription" placeholder="What should the rep know?"></textarea><button class="call-tool-primary" id="addLeadAlert" type="button"><i data-lucide="bell-plus"></i> Add Alert</button></div><div class="call-alert-list">'+(existing.length?existing.map(r=>'<div class="call-tool-row call-alert-row"><i data-lucide="bell"></i><span><strong>'+escapeHTML(r.title)+'</strong>'+(r.description?'<small>'+escapeHTML(r.description)+'</small>':'')+'</span></div>').join(''):'<div class="call-tool-empty">No alerts for this lead yet.</div>')+'</div>');
+      overlay.querySelector('#addLeadAlert').addEventListener('click',()=>{const title=overlay.querySelector('#newAlertTitle').value.trim();const description=overlay.querySelector('#newAlertDescription').value.trim();if(!title){overlay.querySelector('#newAlertTitle').focus();return}if(db){(db.outreach_notes_alerts ||= []).unshift({id:'demo-alert-'+Date.now(),crmid:id,kind:'alert',title,description,created_at:new Date().toISOString()});persist()}else{(stored.alerts ||= []).push({title,description});backup[id]=stored;localStorage.setItem('steadyhands-demo-call-tools',JSON.stringify(backup))}overlay.remove();openTools('Alerts')});
+    }
+  }
+  document.addEventListener('click',function(event){
+    const button=event.target.closest?.('[data-call-action]');
+    if(!button || !labels.has(button.dataset.callAction))return;
+    event.preventDefault();event.stopPropagation();
+    openTools(button.dataset.callAction);
+  },true);
+})();
+</script>
 <script>
 (function(){
   const params = new URLSearchParams(location.search);
   const company = params.get('company') || 'Business';
   const contact = params.get('contact') || '____';
-  const number = params.get('number') || '(000) 000-0000';
+  const number = ''; // Demo: no real phone numbers
   const previewUrl = params.get('preview') || '';
   const crmId = params.get('crm_id') || '';
   const storedTimezone = params.get('timezone') || '';
+  const externalModeFromUrl = params.get('mode');
+  let externalCallLog = false;
+  const externalPreferenceKey = 'steadyhands-default-calling-method-v1';
+  let callingMethod = externalModeFromUrl === 'external' ? 'external' : externalModeFromUrl === 'app' ? 'app' : (localStorage.getItem(externalPreferenceKey) === 'external' ? 'external' : 'app');
+  function setCallingMethod(method){
+    if(['calling','ringing','connected'].includes(callState)){
+      alert('Finish the current app call before switching calling methods.');
+      return;
+    }
+    callingMethod = method === 'external' ? 'external' : 'app';
+    if(localStorage.getItem(externalPreferenceKey) !== 'ask') localStorage.setItem(externalPreferenceKey, callingMethod);
+    document.body.classList.toggle('regular-phone-mode', callingMethod === 'external');
+    const externalPanel = document.getElementById('regularPhonePanel');
+    if(externalPanel) externalPanel.hidden = callingMethod !== 'external';
+    ['regularPhoneMode','appPhoneMode'].forEach(id=>{
+      const button = document.getElementById(id);
+      if(button) button.setAttribute('aria-pressed', String(id === (callingMethod === 'external' ? 'regularPhoneMode':'appPhoneMode')));
+    });
+  }
+  // The user chooses one calling method once per login/session, not for each lead.
+  if(!externalModeFromUrl && localStorage.getItem(externalPreferenceKey) === 'ask') {
+    const sessionKey = 'steadyhands-session-call-method';
+    const chosen = sessionStorage.getItem(sessionKey);
+    if(chosen === 'external' || chosen === 'app') {
+      callingMethod = chosen;
+    } else {
+      setTimeout(() => {
+        const selection = document.createElement('div');
+        selection.className = 'call-choice-overlay';
+        selection.innerHTML = `<div class="call-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="callChoiceTitle"><h2 id="callChoiceTitle">How are you calling today?</h2><p>Choose your calling method for this session. You can change it later.</p><button type="button" data-method="external">Regular Phone</button><button type="button" data-method="app">Call Through App</button></div>`;
+        document.body.appendChild(selection);
+        selection.querySelectorAll('[data-method]').forEach(btn => btn.addEventListener('click', () => {
+          const chosenMethod = btn.dataset.method;
+          sessionStorage.setItem(sessionKey, chosenMethod);
+          setCallingMethod(chosenMethod);
+          selection.remove();
+        }));
+      }, 50);
+    }
+  }
+  document.getElementById('regularPhoneMode')?.addEventListener('click', ()=>setCallingMethod('external'));
+  document.getElementById('appPhoneMode')?.addEventListener('click', ()=>setCallingMethod('app'));
+  document.getElementById('regularPhoneNumber').textContent = number;
+  const dialNumber = number.replace(/[^+0-9]/g,'');
+  document.getElementById('externalDialerLink').href = dialNumber ? 'tel:' + dialNumber : '#';
+  document.getElementById('externalCopyNumber')?.addEventListener('click', async ()=>{
+    try { await navigator.clipboard.writeText(number); }
+    catch { prompt('Copy phone number:',number); }
+  });
+  document.getElementById('externalLogCall')?.addEventListener('click', ()=>{
+    if(questionnaireOpen) return;
+    externalCallLog = true;
+    connectedSeconds = 0;
+    callConnectedAt = null;
+    callEndedAt = Date.now();
+    currentCallSid = '';
+    openPostCallFlow();
+  });
+
 
   const header = document.getElementById('callCompanyHeader');
   const companyEl = document.getElementById('callCompany');
@@ -180,6 +359,7 @@
   });
 
   let callState = 'idle';
+  setCallingMethod(callingMethod);
   let connectedSeconds = 0;
   let timerTick = null;
   let stateTimers = [];
@@ -188,42 +368,9 @@
   let leadLockHeld = false;
   let leadLockHeartbeat = null;
 
-  async function claimLeadForCall(){
-    const client = window.steadyHandsCRMClient;
-    if (!client || !crmId) throw new Error('CRM connection is required to start a call.');
-    const { data, error } = await client.rpc('callcenter_claim_lead', { p_lead_id: String(crmId) });
-    if (error) throw new Error('Call safety setup is unavailable: ' + error.message);
-    if (data !== true) throw new Error('This lead is already being called, was contacted, or is unavailable. Refresh Outreach.');
-    leadLockHeld = true;
-    clearInterval(leadLockHeartbeat);
-    leadLockHeartbeat = setInterval(async () => {
-      if (!leadLockHeld) return;
-      const { data: renewed, error: renewalError } = await client.rpc('callcenter_renew_lead', { p_lead_id: String(crmId) });
-      if (error || renewed !== true) {
-        console.error('Lead reservation could not be renewed', renewalError);
-        clearInterval(leadLockHeartbeat);
-        leadLockHeartbeat = null;
-        // Fail safely: end an in-progress call if its reservation is lost.
-        if (['calling','ringing','connected'].includes(callState)) {
-          window.SteadyHandsTwilioVoice?.hangup();
-          stopCall();
-          if (!questionnaireOpen) openPostCallFlow();
-          alert('Lead reservation lost. The call was ended to prevent duplicate outreach.');
-        }
-        leadLockHeld = false;
-      }
-    }, 30000);
-  }
-
-  async function releaseLeadAfterCall(){
-    clearInterval(leadLockHeartbeat);
-    leadLockHeartbeat = null;
-    if (!leadLockHeld) return;
-    leadLockHeld = false;
-    try {
-      await window.steadyHandsCRMClient?.rpc('callcenter_release_lead', { p_lead_id: String(crmId) });
-    } catch (error) { console.warn('Lead lock will expire automatically:', error); }
-  }
+  // Demo-only: no CRM reservations, locks, or external requests.
+  async function claimLeadForCall(){ leadLockHeld = false; return true; }
+  async function releaseLeadAfterCall(){ leadLockHeld = false; }
 
   let holdActive = false;
   let userMuted = false;
@@ -325,44 +472,8 @@
     alert('This client is listed as not interested');
   }
 
-  async function refreshNotInterestedStatus() {
-    const client = window.steadyHandsCRMClient;
-    if (!client || !crmId) return false;
-
-    const { data, error } = await client
-      .from('crm')
-      .select('stage,outcome,tags')
-      .eq('id', crmId)
-      .maybeSingle();
-
-    if (error) {
-      console.warn('Unable to verify Not Interested status:', error);
-      return false;
-    }
-
-    const tags = Array.isArray(data?.tags)
-      ? data.tags
-      : typeof data?.tags === 'string'
-        ? [data.tags]
-        : [];
-
-    leadBlockedNotInterested = [
-      data?.stage,
-      data?.outcome,
-      ...tags
-    ].some(value => /not\s*interested|notinterested/i.test(String(value || '')));
-
-    if (leadBlockedNotInterested && mainCallButton) {
-      mainCallButton.disabled = true;
-      mainCallButton.classList.remove('hangup');
-      mainCallButton.classList.add('start-call');
-      mainCallButton.setAttribute('aria-label', 'Client is listed as not interested');
-      mainCallButton.innerHTML = '<i data-lucide="phone-off"></i><span>Not Interested</span>';
-      lucide.createIcons();
-    }
-
-    return leadBlockedNotInterested;
-  }
+  // Fictional demo leads may be called any number of times, regardless of stage.
+  async function refreshNotInterestedStatus(){ leadBlockedNotInterested = false; if(mainCallButton)mainCallButton.disabled=false; return false; }
 
   function setState(state){
     callState = state;
@@ -452,7 +563,7 @@
     if(liveTranscriptEnabled && speechRecognition){
       liveTranscriptEnabled = false;
       try{ speechRecognition.stop(); }catch{}
-      setTranscriptStatus('Live transcript is off');
+      setTranscriptStatus('Demo transcript is off');
       const button = document.getElementById('enableLiveTranscript');
       if(button) button.innerHTML = '<i data-lucide="mic"></i> Enable Live Transcript';
     }
@@ -470,7 +581,7 @@
     mainCallButton.classList.toggle('hangup', active);
     mainCallButton.setAttribute('aria-label', active ? 'End call' : 'Start call');
     mainCallButton.innerHTML = active
-      ? '<i data-lucide="phone-off"></i><span>End Call</span>'
+      ? '<i data-lucide="phone"></i><span>End Call</span>'
       : '<i data-lucide="phone"></i><span>Start Call</span>';
     lucide.createIcons();
   }
@@ -520,9 +631,9 @@
       const body = `
         <div class="call-time-confirm">
           <div class="call-time-confirm-icon"><i data-lucide="captions"></i></div>
-          <p class="call-time-confirm-question">Live transcript</p>
+          <p class="call-time-confirm-question">Demo transcript</p>
           <strong class="call-time-confirm-time" style="font-size:1.25rem">Enable transcript for this call?</strong>
-          <p class="call-time-confirm-hours">Twilio will transcribe both sides of the call — you and the customer — and stream the text into this call screen.</p>
+          <p class="call-time-confirm-hours">The demo will display a fictional conversation. No microphone or calling service is used.</p>
         </div>`;
 
       modal('Before you call', body, [
@@ -593,6 +704,7 @@
   }
 
   mainCallButton?.addEventListener('click', async () => {
+    if(callingMethod === 'external') setCallingMethod('app');
     if(questionnaireOpen) return;
 
     if (leadBlockedNotInterested || await refreshNotInterestedStatus()) {
@@ -605,7 +717,7 @@
       const confirmed = await confirmCallTime();
       if (!confirmed) return;
 
-      const transcriptChoice = await confirmLiveTranscriptBeforeCall();
+      const transcriptChoice = true;
       if (!transcriptChoice) return;
 
       await startCall();
@@ -657,7 +769,7 @@
       if (detail.callSid) currentCallSid = String(detail.callSid);
       setState('connected');
 
-      if(liveTranscriptRequested && detail.callSid){
+      if(false && liveTranscriptRequested && detail.callSid){
         const client = window.steadyHandsCRMClient;
         if(client){
           client.functions
@@ -743,7 +855,7 @@
       // Hold and mute remain independent. The caller hears hold audio while held.
       if(holdActive) setTranscriptStatus('Call is on hold · hold audio playing', false);
       else if(liveTranscriptEnabled) setTranscriptStatus('Listening to microphone…', true);
-      else setTranscriptStatus('Live transcript is off');
+      else setTranscriptStatus('Demo transcript is off');
     }catch(error){
       console.error('Unable to change hold state:', error);
       alert(error?.message || 'Unable to put this call on hold.');
@@ -1396,19 +1508,19 @@
       };
 
       speechRecognition.onerror = event => {
-        console.warn('Live transcript error:',event.error);
+        console.warn('Demo transcript error:',event.error);
         if(event.error === 'not-allowed' || event.error === 'service-not-allowed'){
           setTranscriptStatus('Microphone permission is blocked');
           alert('Microphone access is blocked. Open your browser site settings, set Microphone to Allow, then tap Enable Live Transcript again.');
         } else {
-          setTranscriptStatus('Live transcript stopped');
+          setTranscriptStatus('Demo transcript stopped');
         }
       };
 
       speechRecognition.onend = () => {
         if(liveTranscriptEnabled){
           liveTranscriptEnabled = false;
-          setTranscriptStatus('Live transcript is off');
+          setTranscriptStatus('Demo transcript is off');
           const button = document.getElementById('enableLiveTranscript');
           if(button) button.innerHTML = '<i data-lucide="mic"></i> Enable Live Transcript';
           lucide.createIcons();
@@ -1428,9 +1540,9 @@
   document.getElementById('enableLiveTranscript')?.addEventListener('click', function(){
     if(['calling','ringing','connected'].includes(callState)){
       if(liveTranscriptRequested){
-        alert('Live transcription is already enabled for this call.');
+        alert('Demo transcription is already enabled for this call.');
       }else{
-        alert('Enable live transcription before starting the call so Twilio can capture both sides.');
+        alert('Enable demo transcription before starting the call so Twilio can capture both sides.');
       }
       return;
     }
@@ -1440,7 +1552,7 @@
       ? '<i data-lucide="captions"></i> Live Transcript On'
       : '<i data-lucide="mic"></i> Enable Live Transcript';
     setTranscriptStatus(
-      liveTranscriptRequested ? 'Live transcript will start with the next call' : 'Live transcript is off',
+      liveTranscriptRequested ? 'Demo transcript will start with the next call' : 'Demo transcript is off',
       liveTranscriptRequested
     );
     lucide.createIcons();
@@ -1700,7 +1812,7 @@
         <div class="pc-confirm">
           <div class="pc-check"><i data-lucide="check"></i></div>
           <h2>Call saved</h2>
-          <p>${window.steadyHandsDemo ? 'This practice result will be saved on this device only. No real customer or database is contacted.' : `Your call result${data.tags.length ? ', tags' : ''}${data.notes.trim() ? ', notes' : ''} and transcript were saved.`}</p>
+          <p>Your call result${data.tags.length ? ', tags' : ''}${data.notes.trim() ? ', notes' : ''} and transcript were saved.</p>
           <div class="pc-confirm-summary">
             <strong>${data.rating}</strong>
             ${data.outcomes.length ? `<span>${data.outcomes.join(' • ')}</span>` : ''}
@@ -1717,49 +1829,6 @@
           ...data.outcomes,
           data.route === 'callback' ? 'Call Back' : data.route === 'notinterested' ? 'Not Interested' : ''
         ].filter(Boolean).join(' • ') || "Didn't call";
-
-        // Training mode: keep the normal questionnaire, but save locally only.
-        // Do not invoke CRM, Twilio, Supabase, or server-backed activity/transcript functions.
-        if (window.steadyHandsDemo === true) {
-          try {
-            const key = 'steadyhands-offline-demo-v1';
-            const stored = JSON.parse(localStorage.getItem(key) || '{}');
-            const now = new Date().toISOString();
-            const id = 'demo-questionnaire-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
-            const record = {
-              id, user_id:'demo-user', crm_id:crmId,
-              duration_seconds: window.steadyHandsDemoCallSeconds || 0,
-              outcome:finalOutcome, created_at:now,
-              rating:data.rating, outcomes:[...data.outcomes], reason:data.reason,
-              tags:[...data.tags], notes:data.notes, route:data.route,
-              demo_only:true
-            };
-            stored.callcenter_call_activity = [...(stored.callcenter_call_activity || []), record];
-            // Capture only the fictional lines shown in the demo transcript.
-            const fictionalLines = [...document.querySelectorAll('#liveTranscriptList .demo-transcript-line')]
-              .map(line => ({speaker:line.querySelector('strong')?.textContent || 'Speaker',text:line.querySelector('p')?.textContent || ''}));
-            if (fictionalLines.length) {
-              stored.callcenter_transcripts = [...(stored.callcenter_transcripts || []), {
-                id:'demo-transcript-' + Date.now(), activity_id:id, user_id:'demo-user',
-                crm_id:crmId, outcome:finalOutcome, created_at:now,
-                transcript:fictionalLines.map(line => line.speaker + ': ' + line.text).join('\n'),
-                segments:fictionalLines, demo_only:true
-              }];
-            }
-            localStorage.setItem(key,JSON.stringify(stored));
-          } catch (error) {
-            console.error('Unable to save the demo questionnaire locally:',error);
-            alert('This device could not save the demo response. Check browser storage and try again.');
-            return;
-          }
-          overlay.remove();
-          questionnaireOpen = false;
-          // Do not mark fake leads as blocked: allow another practice call anytime.
-          setState('ended');
-          syncMainCallButton();
-          window.steadyHandsDemoResetButton?.();
-          return;
-        }
 
         // A completed dialing attempt is no longer a new lead, even if nobody answered.
         // "Didn't call" does not consume the lead; its questionnaire is still logged.
@@ -1833,10 +1902,10 @@
 
         const savedActivity = await window.callcenterRecordCall?.({
           crmId,
-          duration: connectedSeconds,
-          outcome: finalOutcome,
-          callSid: currentCallSid,
-          connectedAt: callConnectedAt,
+          duration: externalCallLog ? 0 : connectedSeconds,
+          outcome: externalCallLog ? 'External Phone (self-reported) • ' + finalOutcome : finalOutcome,
+          callSid: externalCallLog ? '' : currentCallSid,
+          connectedAt: externalCallLog ? null : callConnectedAt,
           endedAt: callEndedAt || Date.now()
         });
 
@@ -1862,12 +1931,13 @@
         }
 
         await releaseLeadAfterCall();
+        externalCallLog = false;
         overlay.remove();
         questionnaireOpen = false;
         setState('ended');
         syncMainCallButton();
 
-        if (leadBlockedNotInterested && mainCallButton) {
+        if (false && leadBlockedNotInterested && mainCallButton) {
           mainCallButton.disabled = true;
           mainCallButton.setAttribute('aria-label', 'Client is listed as not interested');
           mainCallButton.innerHTML = '<i data-lucide="phone-off"></i><span>Not Interested</span>';
@@ -1881,12 +1951,9 @@
     render();
   }
 
-  // Public local-demo hook to use the exact existing post-call questionnaire.
-  if (window.steadyHandsDemo === true) window.steadyHandsOpenDemoQuestionnaire = openPostCallFlow;
-
   lucide.createIcons();
 })();
 </script>
-<script src="demo-call.js?v=20261011-manual-transcript-1"></script>
+<script src="sale-start.js?v=2" defer></script>
 </body>
 </html>

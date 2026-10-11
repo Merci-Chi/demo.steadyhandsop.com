@@ -43,6 +43,7 @@ function callcenterUrlBase64ToUint8Array(base64String) {
 }
 
 async function callcenterSyncPushSubscription() {
+  if (window.SteadyHandsDemo) return false;
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
   if (!('Notification' in window) || Notification.permission !== 'granted') return false;
 
@@ -439,7 +440,211 @@ async function callcenterFunctionErrorMessage(error, fallback) {
   return fallback;
 }
 
-// Fake Outreach: phone verification is intentionally omitted; demo calls never dial real numbers.
+async function callcenterEnsurePhoneApproved() {
+  // Fictional local demo: phone ownership verification is not required.
+  if (window.SteadyHandsDemo) return true;
+  const client = await callcenterGetPhoneApprovalClient();
+  if (!client) {
+    showToast('Unable to check phone verification');
+    return false;
+  }
+
+  const { data:{ session } = {}, error: sessionError } = await client.auth.getSession();
+  if (sessionError || !session?.user) {
+    showToast('Please sign in again');
+    return false;
+  }
+
+  const loadProfile = async () => {
+    const { data, error } = await client
+      .from('callcenter_profiles')
+      .select('phone,phone_verified_at,phone_approval_status,phone_approval_requested_at,phone_approved_at')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return data || {};
+  };
+
+  let profile;
+  try {
+    profile = await loadProfile();
+  } catch (error) {
+    console.error('Unable to load phone verification status:', error);
+    callcenterPhoneApprovalModal(
+      'Phone verification unavailable',
+      '<p class="modal-help">Your phone verification status could not be checked. Please try again.</p>'
+    );
+    return false;
+  }
+
+  if (profile.phone && profile.phone_verified_at && profile.phone_approval_status === 'approved') {
+    return true;
+  }
+
+  if (profile.phone_verified_at && profile.phone_approval_status === 'pending') {
+    callcenterPhoneApprovalModal(
+      'Waiting for admin approval',
+      `<p class="modal-help">Your phone number <strong>${crmEscape(profile.phone || '')}</strong> has been verified by text message.</p>
+       <p class="modal-note">An admin must approve this number before you can place calls.</p>`
+    );
+    return false;
+  }
+
+  const openVerifyCode = phone => {
+    callcenterPhoneApprovalModal(
+      'Enter verification code',
+      `<p class="modal-help">We sent a 6-digit code to <strong>${crmEscape(phone)}</strong>.</p>
+       <label class="modal-label">Verification code
+         <input class="modal-input" id="verifyPhoneCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+       </label>
+       <div class="modal-note" id="verifyCodeMessage">Enter the code from the text message.</div>`,
+      [
+        {
+          label:'Back',
+          onClick:(close) => {
+            close();
+            openVerifyNumber();
+          }
+        },
+        {
+          label:'Verify',
+          primary:true,
+          onClick:async (close, overlay) => {
+            const codeInput = overlay.querySelector('#verifyPhoneCode');
+            const message = overlay.querySelector('#verifyCodeMessage');
+            const verifyButton = overlay.querySelector('.modal-action.primary');
+            const code = String(codeInput?.value || '').replace(/\D/g,'').slice(0,6);
+
+            if (code.length !== 6) {
+              if (message) message.textContent = 'Enter the 6-digit code.';
+              return;
+            }
+
+            if (verifyButton) {
+              verifyButton.disabled = true;
+              verifyButton.textContent = 'Verifying…';
+            }
+            if (message) message.textContent = 'Checking your code…';
+
+            const { data, error } = await client.functions.invoke('twilio-phone-verify-code', {
+              body:{ phone, code }
+            });
+
+            if (error || !data?.ok) {
+              console.error('Unable to verify phone code:', error || data);
+              const errorText = data?.error || await callcenterFunctionErrorMessage(
+                error,
+                'That code could not be verified.'
+              );
+              if (message) message.textContent = errorText;
+              if (verifyButton) {
+                verifyButton.disabled = false;
+                verifyButton.textContent = 'Verify';
+              }
+              return;
+            }
+
+            close();
+            profile = {
+              ...profile,
+              phone:data.phone || phone,
+              phone_verified_at:data.phone_verified_at || new Date().toISOString(),
+              phone_approval_status:'pending'
+            };
+
+            callcenterPhoneApprovalModal(
+              'Phone verified',
+              `<p class="modal-help">Your phone number <strong>${crmEscape(profile.phone)}</strong> has been verified.</p>
+               <p class="modal-note">Your number is now waiting for admin approval. You will not be able to place calls until it is approved.</p>`
+            );
+          }
+        }
+      ]
+    );
+  };
+
+  const openVerifyNumber = () => {
+    const currentPhone = profile.phone || '';
+
+    callcenterPhoneApprovalModal(
+      'Verify phone number',
+      `<p class="modal-help">Before you can make calls, verify your phone number by SMS. After verification, an admin must approve it.</p>
+       <label class="modal-label">Phone number
+         <input class="modal-input" id="verifyPhoneNumber" type="tel" inputmode="tel" autocomplete="tel" placeholder="(702) 555-0123" value="${crmEscape(currentPhone)}">
+       </label>
+       <div class="modal-note" id="verifyPhoneMessage">We will text a 6-digit verification code to this number.</div>`,
+      [
+        {label:'Cancel'},
+        {
+          label:'Send Code',
+          primary:true,
+          onClick:async (close, overlay) => {
+            const phoneInput = overlay.querySelector('#verifyPhoneNumber');
+            const message = overlay.querySelector('#verifyPhoneMessage');
+            const sendButton = overlay.querySelector('.modal-action.primary');
+            const phone = String(phoneInput?.value || '').trim();
+            const digits = phone.replace(/\D/g,'');
+
+            if (digits.length < 10) {
+              if (message) message.textContent = 'Enter a valid phone number first.';
+              return;
+            }
+
+            if (sendButton) {
+              sendButton.disabled = true;
+              sendButton.textContent = 'Sending…';
+            }
+            if (message) message.textContent = 'Sending verification code…';
+
+            const { data, error } = await client.functions.invoke('twilio-phone-send-code', {
+              body:{ phone }
+            });
+
+            if (error || !data?.ok) {
+              console.error('Unable to send phone code:', error || data);
+              const errorText = data?.error || await callcenterFunctionErrorMessage(
+                error,
+                'Unable to send the verification code.'
+              );
+              if (message) message.textContent = errorText;
+              if (sendButton) {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send Code';
+              }
+              return;
+            }
+
+            close();
+            openVerifyCode(data.phone || phone);
+          }
+        }
+      ]
+    );
+  };
+
+  if (profile.phone_approval_status === 'rejected') {
+    callcenterPhoneApprovalModal(
+      'Phone number not approved',
+      `<p class="modal-help">Your previously submitted phone number was not approved.</p>
+       <p class="modal-note">Verify a different phone number to submit a new approval request.</p>`,
+      [
+        {label:'Close'},
+        {
+          label:'Verify New Number',
+          primary:true,
+          onClick:(close) => {
+            close();
+            openVerifyNumber();
+          }
+        }
+      ]
+    );
+    return false;
+  }
+
+  openVerifyNumber();
+  return false;
+}
 
 function setupOutreach() {
 
@@ -461,7 +666,12 @@ function setupOutreach() {
 
   let activeFilter = crmSearchState?.mainFilter || 'All';
 
-  let selectedCard = originalOrder.find(card => card.dataset.crmId === window.steadyHandsForcedCRMId) || (selectedLeadTop?.querySelector('.lead-card') || null);
+  // Keep the explicitly chosen lead across page changes and reloads.
+  const savedLeadId = (() => { try { return sessionStorage.getItem('steadyhands-selected-outreach-crm-id') || ''; } catch { return ''; } })();
+  let selectedCard = originalOrder.find(card => card.dataset.crmId === window.steadyHandsForcedCRMId)
+    || originalOrder.find(card => card.dataset.crmId === savedLeadId)
+    || (selectedLeadTop?.querySelector('.lead-card') || null);
+
   window.steadyHandsForcedCRMId = null;
 
   let leadSort = 'hours';
@@ -998,6 +1208,12 @@ function setupOutreach() {
         selected.classList.add('selected-lead');
         selectedLeadTop.replaceChildren(selected);
         selectedCard = selected;
+        if (selected.dataset.crmId) {
+          try { sessionStorage.setItem('steadyhands-selected-outreach-crm-id', String(selected.dataset.crmId)); } catch {}
+          document.body.classList.remove('sh-no-selected-lead');
+          const empty = document.getElementById('shNoLead');
+          if (empty) empty.hidden = true;
+        }
       }
       following.forEach((card, index) => {
         card.style.display = '';
@@ -1458,35 +1674,6 @@ function setupOutreach() {
     e.stopPropagation();
     if (queueTransition) return;
 
-    // Offline training: pick a DIFFERENT lead from the local, eligible cards.
-    // The live implementation below relies on preview_inventory; don't use it
-    // for fictional leads, and don't reload the page.
-    if (window.steadyHandsDemo) {
-      const currentId = String(selectedCard?.dataset.crmId || selectedLeadTop?.querySelector('.lead-card')?.dataset.crmId || '');
-      const candidates = originalOrder.filter(card =>
-        card.dataset.notInterested !== 'true' &&
-        String(card.dataset.crmId || '') !== currentId
-      );
-      if (!candidates.length) {
-        showToast('No other demo leads available.');
-        return;
-      }
-      const nextCard = candidates[Math.floor(Math.random() * candidates.length)];
-      changeLeads(() => {
-        selectedCard = nextCard;
-        // Refresh the order of the unselected leads, too. The selected lead
-        // stays outside the queue and the original 10-card limit is preserved.
-        const remaining = callcenterShuffle(originalOrder.filter(card => card !== nextCard));
-        originalOrder.splice(0, originalOrder.length, nextCard, ...remaining);
-        renderQueue(false);
-        window.callcenterSetResumeLocation?.(
-          `index.html?crm_id=${encodeURIComponent(nextCard.dataset.crmId)}`,
-          companyName(nextCard)
-        );
-      });
-      return;
-    }
-
     const client = window.steadyHandsCRMClient;
     if (!client) {
       showToast('Unable to load a random lead.');
@@ -1540,6 +1727,7 @@ function setupOutreach() {
         throw new Error('Random lead could not be loaded.');
       }
 
+      sessionStorage.setItem('steadyhands-selected-outreach-crm-id', String(picked.crm_id));
       sessionStorage.setItem(
         'steadyhands-global-random-lead',
         JSON.stringify({
@@ -1607,7 +1795,7 @@ function setupOutreach() {
 
       const card = btn.closest('.lead-card');
 
-      if (card?.dataset.notInterested === 'true') {
+      if (!window.SteadyHandsDemo && card?.dataset.notInterested === 'true') {
         showToast('This client is listed as not interested');
         return;
       }
@@ -1634,7 +1822,8 @@ function setupOutreach() {
 
       params.set('build', '20261003-mic-permission-2');
 
-      // Fictional demo leads open the simulated call screen directly.
+      const approvedToCall = window.SteadyHandsDemo ? true : await callcenterEnsurePhoneApproved();
+      if (!approvedToCall) return;
 
       const callHref = `call.html?${params.toString()}`;
       window.callcenterSetResumeLocation?.(callHref, company);
@@ -2245,7 +2434,7 @@ function setupAccount() {
 
       if (label === 'Log Out') return modal('Log Out', '<p class="modal-help">Are you sure you want to log out?</p>', [
 
-        { label: 'Cancel' }, { label: 'Log Out', danger: true, onClick: async close => { close(); try { const client = window.steadyHandsCRMClient || (window.supabase && window.supabase.createClient(SH_SUPABASE_URL, SH_PUBLISHABLE_KEY)); if (client) await client.auth.signOut(); window.callcenterClearResumeLocation?.(); sessionStorage.removeItem('callcenter-resume-checked'); window.location.replace('login.html'); } catch(error) {console.error('Sign out failed:',error); showToast('Unable to sign out. Try again.');} } }
+        { label: 'Cancel' }, { label: 'Log Out', danger: true, onClick: async close => { close(); try { const client = window.steadyHandsCRMClient || (window.supabase && window.supabase.createClient(SH_SUPABASE_URL, SH_PUBLISHABLE_KEY)); if (client) await client.auth.signOut(); window.callcenterClearResumeLocation?.(); sessionStorage.removeItem('callcenter-resume-checked'); window.location.replace('index.html'); } catch(error) {console.error('Sign out failed:',error); showToast('Unable to sign out. Try again.');} } }
 
       ]);
 
@@ -2267,7 +2456,7 @@ function setupAccount() {
 
 }
 
-const SH_SUPABASE_URL = 'https://invalid.example';
+const SH_SUPABASE_URL = 'https\://glonbvrcudwuzjundrii.supabase.co';
 
 const SH_PUBLISHABLE_KEY = 'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr';
 
@@ -2276,8 +2465,8 @@ function crmText(v) { return String(v ?? ''); }
 function crmEscape(v) { return crmText(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 
 function crmUrl(v) {
+  if (window.SteadyHandsDemo) { try { const url=new URL(crmText(v)); return url.protocol==='https:' ? url.href : '';  } catch { return ''; } }
 
-  if (window.steadyHandsDemo && /^\.\/demo-preview\.html(?:\?|$)/.test(crmText(v))) return crmText(v);
   try { const url = new URL(crmText(v)); return url.protocol === 'https:' && url.hostname === 'viewyoursite.today' && url.pathname.startsWith('/Sites/') ? url.href : ''; }
 
   catch { return ''; }
@@ -2370,7 +2559,6 @@ function callcenterZoneLabel(zone) {
   })[zone] || String(zone || '').replace(/_/g, ' ');
 }
 
-// Use the actual current instant; Intl formats it in each lead's local time zone.
 function callcenterClockParts(zone, date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: zone,
@@ -2471,7 +2659,7 @@ function refreshLeadCallTimes(root = document) {
     const timing = callcenterCallStatus(phone, timezone);
     el.classList.remove('call-time-good', 'call-time-wait', 'call-time-late');
     el.classList.add(`call-time-${timing.state}`);
-    el.innerHTML = `<i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, timezone))} · ${crmEscape(callcenterZoneLabel(timing.zone))}`;
+    el.innerHTML = `<i data-lucide="phone-call"></i> ${crmEscape(timing.label)}`;
   });
 
   refreshIcons();
@@ -2480,7 +2668,7 @@ function refreshLeadCallTimes(root = document) {
 function startLeadCallTimeTicker() {
   refreshLeadCallTimes();
   if (window.__steadyHandsCallTimeTicker) return;
-  window.__steadyHandsCallTimeTicker = window.setInterval(() => refreshLeadCallTimes(), 15000);
+  window.__steadyHandsCallTimeTicker = window.setInterval(() => refreshLeadCallTimes(), 30000);
 }
 
 // Batch 1: only never-contacted leads belong in fresh Outreach.
@@ -2567,7 +2755,7 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
 
   const urls = [...new Set(siteURLs.map(crmUrl).filter(Boolean))];
 
-  const links = urls.map((url,i)=>`<a class="preview-link" target="_blank" rel="noopener noreferrer" href="${crmEscape(url)}"><i data-lucide="external-link"></i> ${urls.length > 1 ? `Preview ${i + 1}` : 'Open Website Preview'}</a>`).join('');
+  const links = urls.map((url,i)=>`<a class="preview-link" target="_blank" rel="noopener noreferrer" href="demo-preview.html"><i data-lucide="external-link"></i> ${urls.length > 1 ? `Preview ${i + 1}` : 'Open Website Preview'}</a>`).join('');
 
   const card=document.createElement('section');
 
@@ -2604,7 +2792,8 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
     <div class="compact-lead-meta">
       ${tags.length ? `<div class="tag-row compact-tag-row">${tags.map((t,i)=>`<span class="tag ${crmSourceClass(t)}">${crmEscape(t)}</span>`).join('')}</div>` : ''}
       <div class="compact-call-row">
-        <span class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span>
+        <span class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="phone-call"></i> ${crmEscape(callTiming.label)}</span>
+        <span class="compact-local-time" data-live-call-time data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span>
       </div>
     </div>
 
@@ -2612,16 +2801,17 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
 
       ${tags.length ? `<div class="tag-row">${tags.map((t,i)=>`<span class="tag ${['blue','purple','orange'][i%3]}">${crmEscape(t)}</span>`).join('')}</div>` : ''}
 
-      <div class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</div>
+      <div class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="phone-call"></i> ${crmEscape(callTiming.label)}</div>
+      <div class="time-row"><span class="selected-local-time" data-live-call-time data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> <strong>For them:</strong> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span></div>
       <div class="time-row"><span><i data-lucide="calendar"></i> ${dateText}</span></div>
 
       <div class="preview-links">${links}</div>
 
       <div class="notes"><div class="notes-title"><i data-lucide="notebook-pen"></i> CRM Notes</div><p>${crmEscape(notes || 'No notes added yet.')}</p></div>
 
-      <button class="call-btn" type="button" data-select-lead ${phone ? '' : 'disabled'}><i data-lucide="check-circle-2"></i> ${phone ? 'Select Lead' : 'No Phone Number'}</button>
+      <button class="call-btn" type="button" data-select-lead ${window.SteadyHandsDemo ? '' : (phone ? '' : 'disabled')}><i data-lucide="check-circle-2"></i> ${window.SteadyHandsDemo ? 'Open Call Screen' : (phone ? 'Select Lead' : 'No Phone Number')}</button>
 
-      <div class="quick-actions"><button class="quick-btn" type="button"><i data-lucide="shuffle"></i>Random</button><button class="quick-btn" type="button"><i data-lucide="play"></i>Next</button><button class="quick-btn calendar-btn" type="button"><i data-lucide="calendar-plus"></i>Add to Calendar</button></div>
+      <div class="quick-actions"><button class="quick-btn" type="button"><i data-lucide="shuffle"></i>Next Random Lead</button><button class="quick-btn calendar-btn" type="button"><i data-lucide="calendar-plus"></i>Add to Calendar</button></div>
 
     </div>`;
 
@@ -2845,16 +3035,6 @@ async function crmRunGlobalSearch() {
   const client = window.steadyHandsCRMClient;
   if (!box || !status || !client) return;
 
-  if (window.steadyHandsDemo) {
-    const query = crmNormalizeSearch(q('#crmSearch')?.value);
-    const current = q('#selectedLeadTop .lead-card')?.dataset.crmId || '';
-    const matching = (window.STEADY_HANDS_DEMO_LEADS || []).filter(lead => callcenterIsFreshLead(lead) && (!query || crmFindSearchMatch(lead,query) || String(lead.sitekey).includes(query)));
-    box.replaceChildren(...matching.filter(lead=>lead.id!==current).slice(0,10).map(lead => makeCRMLinkCard(lead,[lead.previewurl])));
-    status.style.display = matching.length ? 'none' : '';
-    status.textContent = matching.length ? '' : 'No matching demo leads found.';
-    setupCopyButtons(); setupOutreach(); refreshIcons();
-    return;
-  }
   const query = crmNormalizeSearch(q('#crmSearch')?.value);
   crmSearchState.query = query;
   const selectedTags = [...crmSearchState.tags];
@@ -3045,20 +3225,6 @@ async function loadApprovedPreviewCRM(options = {}) {
 
   if (!status || !box) return;
 
-  if (window.steadyHandsDemo) {
-    if (!options.preserveSearch || !q('#selectedLeadTop .lead-card')) showSelectedLeadSkeleton();
-    crmSetupGlobalSearchControls();
-    const leads = (window.STEADY_HANDS_DEMO_LEADS || []).filter(callcenterIsFreshLead);
-    const persisted = leads.map(lead => ({...lead,...(function(){try{return JSON.parse(localStorage.getItem('steadyhands-offline-demo-v1') || '{}').crm?.[lead.id] || {}}catch{return {}}})()}));
-    box.replaceChildren(...persisted.filter(callcenterIsFreshLead).map(lead => makeCRMLinkCard(lead,[lead.previewurl])));
-    status.style.display = 'none';
-    setupCopyButtons();
-    setupOutreach();
-    startLeadCallTimeTicker();
-    refreshIcons();
-    finishInitialOutreachLoad();
-    return;
-  }
   if (!options.preserveSearch || !q('#selectedLeadTop .lead-card')) showSelectedLeadSkeleton();
 
   q('#crmReload')?.addEventListener('click', () => location.reload());
@@ -3177,7 +3343,7 @@ async function loadApprovedPreviewCRM(options = {}) {
   `).join('');
 
   try {
-    const TARGET_LEADS = 50;
+    const TARGET_LEADS = window.SteadyHandsDemo ? 100 : 80;
     const INVENTORY_PAGE = 100;
     const MAX_INVENTORY_PAGES = 30;
     const byCRM = new Map();

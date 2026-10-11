@@ -1,5 +1,5 @@
 (() => {
-  const SUPABASE_URL = 'https://invalid.example';
+  const SUPABASE_URL = 'https://glonbvrcudwuzjundrii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr';
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -122,7 +122,7 @@
           <div class="admin-section-head">
             <div>
               <h2>Outbound Phone Numbers</h2>
-              <p>Run the caller-ID SQL migration first, then refresh this page.</p>
+              <p>Demo calling is available without setup.</p>
             </div>
           </div>
           <div class="admin-empty">

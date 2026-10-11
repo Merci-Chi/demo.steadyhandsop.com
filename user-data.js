@@ -1,5 +1,5 @@
 (() => {
-  const URL = 'https://invalid.example';
+  const URL = 'https://glonbvrcudwuzjundrii.supabase.co';
   const KEY = 'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr';
 
   const money = cents => cents == null
@@ -91,8 +91,8 @@
   }
 
   function activityState(profile) {
+    if (window.SteadyHandsDemo) return {label:'Active',cls:'active',days:0};
     if (!profile) return { label:'Unknown', cls:'inactive', days:Infinity };
-    if (window.steadyHandsDemo) return { label:'Active', cls:'active', days:0 };
     if (profile.disabled_at) return { label:'Disabled', cls:'disabled', days:Infinity };
 
     const referenceDate = profile.last_call_at || profile.created_at;
@@ -183,6 +183,7 @@
 
 
   async function maybeSendAccountActivityNotification(profile) {
+    if (window.SteadyHandsDemo) return;
     if (!profile) return;
 
     let deviceNotificationsEnabled = false;
@@ -267,6 +268,7 @@
   }
 
   async function showOnboarding(session, profile) {
+    if (window.SteadyHandsDemo) return;
     if (!profile || profile.onboarding_completed || document.querySelector('.cc-overlay[data-onboarding]')) return;
     const c = client();
     const overlay = document.createElement('div');
@@ -722,7 +724,7 @@
       <section class="settings-section">
         <div class="settings-section-title">App</div>
         <button class="settings-row" type="button" data-account-action="appearance">
-          <span class="settings-icon"><i data-lucide="${profile.theme_preference === 'dark' ? 'moon' : 'sun'}"></i></span>
+          <span class="settings-icon"><i data-lucide="circle-half"></i></span>
           <span class="settings-copy"><strong>Appearance</strong><small>${profile.theme_preference === 'dark' ? 'Dark mode' : 'Light mode'}</small></span>
           <i class="settings-chevron" data-lucide="chevron-right"></i>
         </button>
@@ -917,8 +919,6 @@
 
               const appearanceRow = main.querySelector('[data-account-action="appearance"] .settings-copy small');
               if (appearanceRow) appearanceRow.textContent = nextTheme === 'dark' ? 'Dark mode' : 'Light mode';
-               const appearanceIcon = main.querySelector('[data-account-action="appearance"] .settings-icon');
-               if (appearanceIcon) appearanceIcon.innerHTML = `<i data-lucide="${nextTheme === 'dark' ? 'moon' : 'sun'}"></i>`;
               message.textContent = nextTheme === 'dark' ? 'Dark mode saved to your account.' : 'Light mode saved to your account.';
               window.lucide?.createIcons();
             });
@@ -1110,7 +1110,7 @@
   }
 
   async function loadActivity(session, ownProfile) {
-    if (document.title !== 'Activity') return;
+    if (!['Activity','Performance'].includes(document.title)) return;
 
     const c = client();
     const main = document.getElementById('activityContent');
@@ -1263,6 +1263,32 @@
       return { cls:'noanswer', icon:'phone', label:text.length > 18 ? 'Called' : text };
     };
 
+    // Productivity summary uses the SAME account-scoped call activity as the history below.
+    // Dates shown in local browser time; older rows may be capped by the 1,000-row query.
+    const now = new Date();
+    const since7 = new Date(now); since7.setDate(since7.getDate()-6); since7.setHours(0,0,0,0);
+    const weekRows = activities.filter(row => { const d = new Date(row.created_at); return !Number.isNaN(d.getTime()) && d >= since7; });
+    const contacted = weekRows.filter(row => !/didn.t call/i.test(String(row.outcome||'')));
+    const positive = contacted.filter(row => /interested|follow.?up|call.?back|requested (text|email)|sale|sold|closed/i.test(String(row.outcome||'')) && !/not interested/i.test(String(row.outcome||'')));
+    const avgSeconds = contacted.length ? Math.round(contacted.reduce((sum,row)=>sum+(Number(row.duration_seconds)||0),0)/contacted.length) : 0;
+    const dailyCounts = Array.from({length:7},(_,index)=>{
+      const day = new Date(since7); day.setDate(day.getDate()+index);
+      const next = new Date(day); next.setDate(next.getDate()+1);
+      return { label:day.toLocaleDateString([], {weekday:'short'}), count:contacted.filter(row=>{const d=new Date(row.created_at);return d>=day&&d<next;}).length };
+    });
+    const dailyMax = Math.max(1,...dailyCounts.map(day=>day.count));
+    const perfSummary = `<section class="sh-performance-panel" aria-label="Weekly productivity">
+      <div class="sh-performance-heading"><div><h2>My Performance</h2><p>Last 7 days · ${selectedUserId===session.user.id?'Your':'Selected teammate’s'} recorded call activity</p></div><a href="sales.html">Sales Targets <i data-lucide="arrow-up-right"></i></a></div>
+      <div class="sh-performance-metrics">
+        <div class="sh-performance-metric"><span>Calls Logged</span><strong>${contacted.length}</strong><small>Manually logged and app calls</small></div>
+        <div class="sh-performance-metric"><span>Positive Outcomes</span><strong>${positive.length}</strong><small>Based on logged outcomes</small></div>
+        <div class="sh-performance-metric"><span>Positive Outcome Rate</span><strong>${contacted.length?Math.round(100*positive.length/contacted.length):0}%</strong><small>Not a verified close rate</small></div>
+        <div class="sh-performance-metric"><span>Avg. Logged Duration</span><strong>${formatDuration(avgSeconds)}</strong><small>Based on recorded durations</small></div>
+      </div>
+      <div class="sh-performance-chart"><div class="sh-performance-chart-title"><strong>Call Activity</strong><span>Last 7 days</span></div><div class="sh-performance-bars" role="img" aria-label="Calls logged by day: ${dailyCounts.map(x=>x.label+' '+x.count).join(', ')}">${dailyCounts.map(day=>`<div class="sh-performance-bar-cell"><span>${day.count}</span><div class="sh-performance-bar-track"><div class="sh-performance-bar" style="height:${Math.max(day.count?7:0,Math.round(100*day.count/dailyMax))}%"></div></div><small>${day.label}</small></div>`).join('')}</div></div>
+      <p class="sh-performance-disclaimer">Stats use your most recent 1,000 logged records. Regular-phone outcomes are self-reported; confirmed sales and commissions remain on Sales and Earnings.</p>
+    </section>`;
+
     const recentRows = activities.slice(0, 30);
 
     const followups = ownedCallbacks.map(lead => ({
@@ -1328,7 +1354,8 @@
     }).join('') : '<div class="activity-empty">No upcoming call backs.</div>';
 
     main.innerHTML = `
-      ${isManager && requestedUserId ? '<a href="activity.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:900;color:#2579cf;margin:2px 2px 12px"><i data-lucide="chevron-left" style="width:15px;height:15px"></i> My Activity</a>' : ''}
+      ${perfSummary}
+      ${isManager && requestedUserId ? '<a href="activity.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:900;color:#2579cf;margin:2px 2px 12px"><i data-lucide="chevron-left" style="width:15px;height:15px"></i> My Performance</a>' : ''}
 
       <div class="activity-stats">
         <div class="activity-stat">
@@ -1392,7 +1419,6 @@
             </div>
             <button type="button" class="activity-transcript-close" aria-label="Close transcript"><i data-lucide="x"></i></button>
           </div>
-          ${window.steadyHandsDemo && row.insights ? `<div class="demo-call-insights"><strong>Call Insights · Fictional example</strong><p><b>Interest level:</b> ${esc(row.insights.interest)}</p><p><b>Summary:</b> ${esc(row.insights.summary)}</p><p><b>Objection:</b> ${esc(row.insights.objection)}</p><p><b>Next step:</b> ${esc(row.insights.next_step)}</p></div>` : ''}
           <div class="activity-transcript-copy">${esc(String(row.transcript || 'No transcript text was captured.')).replace(/\n/g,'<br>')}</div>
         </section>`;
       document.body.appendChild(overlay);
@@ -1507,21 +1533,17 @@
       return;
     }
 
-    if (!window.steadyHandsDemo) {
-      await maybePromptDeviceNotifications();
-      await maybeSendAccountActivityNotification(profile);
-    }
+    await maybePromptDeviceNotifications();
+    await maybeSendAccountActivityNotification(profile);
 
-    const state = window.steadyHandsDemo ? {label:'Active',cls:'active',days:0} : activityState(profile);
-    if (!window.steadyHandsDemo && state.label === 'Disabled') {
+    const state = activityState(profile);
+    if (state.label === 'Disabled') {
       showDisabled(profile);
       return;
     }
 
-    if (!window.steadyHandsDemo) {
-      await showOnboarding(session, profile);
-      if (!profile.onboarding_completed) return;
-    }
+    await showOnboarding(session, profile);
+    if (!profile.onboarding_completed) return;
 
     await Promise.all([
       loadEarnings(session, profile),
