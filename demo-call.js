@@ -33,7 +33,7 @@ function button(){
  b.disabled=false;b.removeAttribute('title');
  b.classList.toggle('hangup',active);b.classList.toggle('start-call',!active);
  b.setAttribute('aria-label',active?'End simulated call':'Start simulated call');
- b.innerHTML=active?'<i data-lucide="phone"></i><span>End Demo Call</span>':'<i data-lucide="phone"></i><span>Start Demo Call</span>';
+ b.innerHTML='<span class="demo-main-icon" aria-hidden="true"><i data-lucide="phone"></i></span><span>'+(active?'End Demo Call':'Start Demo Call')+'</span>';
  window.lucide?.createIcons();
 }
 function stop(){
