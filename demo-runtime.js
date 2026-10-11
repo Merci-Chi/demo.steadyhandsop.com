@@ -55,11 +55,11 @@
  const demoNoticeObserver=new MutationObserver(removeOldDemoNotice);
  demoNoticeObserver.observe(document.documentElement,{childList:true,subtree:true});
 
- // Suppress demo network writes: this build does not ship live calling or Edge Functions.
+ // Calling is handled by demo-call.js: no real phone network is used.
  window.addEventListener('DOMContentLoaded',()=>{
-   if(document.body.classList.contains('page-call')){
-    ['hangupBtn','enableLiveTranscript'].forEach(id=>{const b=document.getElementById(id);if(b){b.disabled=true;b.title='Live calling and transcription disabled in demo';b.style.opacity='.5'}});
-    const txt=document.querySelector('#transcriptSection p');if(txt)txt.textContent='Live transcription is disabled in this offline demo.';
-   }
+   if(!document.body.classList.contains('page-call'))return;
+   const txt=document.querySelector('#transcriptSection .live-transcript-head p');
+   if(txt)txt.textContent='Example conversation generated for training. No real call or microphone access.';
  });
+
 })();
