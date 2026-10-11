@@ -5204,3 +5204,62 @@ html[data-theme="dark"] .page-call .demo-call-controls .call-control span { colo
 html[data-theme="dark"] .page-call .demo-call-controls .demo-icon-bubble {background:#152c45;border-color:#355878}
 html[data-theme="dark"] .page-call .demo-call-controls .demo-icon-bubble svg {color:#f0f7ff}
 html[data-theme="dark"] .page-call .demo-call-controls .call-control > span:last-child {color:#c3d5e8}
+
+
+/* Popup viewport safety: every sheet/dialog stays reachable on short mobile
+   screens, landscape mode, and when browser chrome changes the viewport. */
+:is(
+  .app-modal-overlay,.cc-overlay,.post-call-overlay,.calendar-sheet-overlay,
+  .call-keypad-overlay,.call-tool-overlay,.settings-sheet-overlay,
+  .activity-transcript-overlay,.device-notification-popup-overlay
+) {
+  box-sizing: border-box;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+:is(
+  .app-modal,.cc-sheet,.post-call-sheet,.calendar-sheet,.call-keypad-sheet,
+  .call-tool-sheet,.settings-sheet,.activity-transcript-sheet,
+  .device-notification-popup
+) {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+@media (max-width: 699px) {
+  :is(
+    .app-modal,.cc-sheet,.post-call-sheet,.calendar-sheet,.call-keypad-sheet,
+    .call-tool-sheet,.settings-sheet,.activity-transcript-sheet,
+    .device-notification-popup
+  ) {
+    max-height: calc(100vh - 12px);
+    max-height: calc(100dvh - 12px);
+  }
+  /* Bottom sheets should not be vertically centered or clipped when tall. */
+  :is(
+    .cc-overlay,.post-call-overlay,.calendar-sheet-overlay,
+    .call-keypad-overlay,.call-tool-overlay,.settings-sheet-overlay,
+    .activity-transcript-overlay
+  ) { align-items: flex-end; }
+}
+/* Keep the close/header controls accessible when scrolling longer sheets. */
+:is(.app-modal-head,.call-tool-head,.calendar-sheet-head,.activity-transcript-head,.call-keypad-head) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+/* iOS bottom safe-area space for scrollable popup content. */
+:is(
+  .app-modal,.cc-sheet,.post-call-sheet,.calendar-sheet,.call-keypad-sheet,
+  .call-tool-sheet,.settings-sheet,.activity-transcript-sheet,
+  .device-notification-popup
+) { scroll-padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
