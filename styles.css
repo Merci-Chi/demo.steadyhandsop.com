@@ -5031,3 +5031,15 @@ body *::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Improved call-screen spacing and fictional demo transcript */
+.page-call .call-transcript-section{margin-top:22px}
+.page-call .call-transcript-card{border-radius:20px}
+.page-call .demo-transcript-line{margin:12px;padding:12px 14px;border-radius:15px;background:#ecf4ff;color:#14365b;line-height:1.55}
+.page-call .demo-transcript-line.demo-business{background:#f0f2f6}
+.page-call .demo-transcript-line strong{display:block;font-size:12px;margin-bottom:4px;color:#2474cf}
+.page-call .demo-transcript-line p{margin:0;font-size:14px}
+.page-call #hangupBtn{min-width:88px;min-height:70px}
+.page-call .call-action-grid button,.page-call .call-tool-card{transition:transform .15s ease}
+.page-call .call-action-grid button:active,.page-call .call-tool-card:active{transform:scale(.97)}
+@media(max-width:600px){.page-call .call-transcript-section{padding:0 12px}.page-call .call-transcript-card{margin:0}}
