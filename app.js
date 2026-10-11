@@ -2370,10 +2370,8 @@ function callcenterZoneLabel(zone) {
   })[zone] || String(zone || '').replace(/_/g, ' ');
 }
 
-// Fixed training-only reference instant: Monday 2026-10-12, 9:00 AM Pacific (PDT).
-// Do not use this clock for real activity timestamps or scheduling.
-const CALLCENTER_DEMO_REFERENCE_TIME = new Date('2026-10-12T16:00:00.000Z');
-function callcenterClockParts(zone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
+// Use the actual current instant; Intl formats it in each lead's local time zone.
+function callcenterClockParts(zone, date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: zone,
     weekday: 'short',
@@ -2385,7 +2383,7 @@ function callcenterClockParts(zone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
   return { weekday: get('weekday'), hour: Number(get('hour')) % 24, minute: Number(get('minute')) };
 }
 
-function callcenterCallStatus(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
+function callcenterCallStatus(phone, storedTimezone, date = new Date()) {
   const info = callcenterLeadZone(phone, storedTimezone);
   const p = callcenterClockParts(info.zone, date);
   const minutes = p.hour * 60 + p.minute;
@@ -2420,7 +2418,7 @@ function callcenterCallStatus(phone, storedTimezone, date = CALLCENTER_DEMO_REFE
   return { ...info, ...p, minutes, state, label, score };
 }
 
-function callcenterLocalTimeText(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
+function callcenterLocalTimeText(phone, storedTimezone, date = new Date()) {
   const info = callcenterLeadZone(phone, storedTimezone);
   return new Intl.DateTimeFormat('en-US', {
     timeZone: info.zone,
@@ -2434,7 +2432,7 @@ function callcenterLocalTimeText(phone, storedTimezone, date = CALLCENTER_DEMO_R
   }).format(date);
 }
 
-function callcenterCompactLocalTimeText(phone, storedTimezone, date = CALLCENTER_DEMO_REFERENCE_TIME) {
+function callcenterCompactLocalTimeText(phone, storedTimezone, date = new Date()) {
   const info = callcenterLeadZone(phone, storedTimezone);
   return new Intl.DateTimeFormat('en-US', {
     timeZone: info.zone,
@@ -2473,7 +2471,7 @@ function refreshLeadCallTimes(root = document) {
     const timing = callcenterCallStatus(phone, timezone);
     el.classList.remove('call-time-good', 'call-time-wait', 'call-time-late');
     el.classList.add(`call-time-${timing.state}`);
-    el.innerHTML = `<i data-lucide="phone-call"></i> ${crmEscape(timing.label)}`;
+    el.innerHTML = `<i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, timezone))} · ${crmEscape(callcenterZoneLabel(timing.zone))}`;
   });
 
   refreshIcons();
@@ -2482,7 +2480,7 @@ function refreshLeadCallTimes(root = document) {
 function startLeadCallTimeTicker() {
   refreshLeadCallTimes();
   if (window.__steadyHandsCallTimeTicker) return;
-  window.__steadyHandsCallTimeTicker = window.setInterval(() => refreshLeadCallTimes(), 30000);
+  window.__steadyHandsCallTimeTicker = window.setInterval(() => refreshLeadCallTimes(), 15000);
 }
 
 // Batch 1: only never-contacted leads belong in fresh Outreach.
@@ -2606,8 +2604,7 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
     <div class="compact-lead-meta">
       ${tags.length ? `<div class="tag-row compact-tag-row">${tags.map((t,i)=>`<span class="tag ${crmSourceClass(t)}">${crmEscape(t)}</span>`).join('')}</div>` : ''}
       <div class="compact-call-row">
-        <span class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="phone-call"></i> ${crmEscape(callTiming.label)}</span>
-        <span class="compact-local-time" data-live-call-time data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span>
+        <span class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span>
       </div>
     </div>
 
@@ -2615,8 +2612,7 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
 
       ${tags.length ? `<div class="tag-row">${tags.map((t,i)=>`<span class="tag ${['blue','purple','orange'][i%3]}">${crmEscape(t)}</span>`).join('')}</div>` : ''}
 
-      <div class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="phone-call"></i> ${crmEscape(callTiming.label)}</div>
-      <div class="time-row"><span class="selected-local-time" data-live-call-time data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> <strong>For them:</strong> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</span></div>
+      <div class="call-time-status call-time-${callTiming.state}" data-live-call-status data-phone="${crmEscape(phone)}" data-timezone="${crmEscape(lead.timezone || '')}"><i data-lucide="clock-3"></i> ${crmEscape(callcenterCompactLocalTimeText(phone, lead.timezone))} · ${crmEscape(callcenterZoneLabel(callTiming.zone))}</div>
       <div class="time-row"><span><i data-lucide="calendar"></i> ${dateText}</span></div>
 
       <div class="preview-links">${links}</div>
