@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
   <title>Call</title>
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="styles.css?v=20261009-unified-dark" />
+  <link rel="stylesheet" href="styles.css?v=20261011-demo-call-design" />
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <script src="theme.js?v=20261005-account-theme"></script>
@@ -42,10 +42,10 @@
       <button class="call-action-card" data-call-action="Templates"><span class="call-action-icon"><i data-lucide="messages-square"></i></span><span>Templates</span></button>
       <button class="call-action-card" data-call-action="Quick Info"><span class="call-action-icon"><i data-lucide="circle-dollar-sign"></i></span><span>Quick Info</span></button>
     </section>
-    <section class="call-controls">
+    <section class="call-controls demo-call-controls" aria-label="Demo call controls">
       <button class="call-control small" id="muteBtn"><i data-lucide="mic"></i><span>Mute</span></button>
       <button class="call-control small" id="keypadBtn"><i data-lucide="grid-3x3"></i><span>Keypad</span></button>
-      <button class="call-control start-call" id="hangupBtn" aria-label="Start call"><i data-lucide="phone"></i><span>Start Call</span></button>
+      <button class="call-control start-call" id="hangupBtn" type="button" aria-label="Start demo call"><i data-lucide="phone"></i><span>Start Demo Call</span></button>
       <button class="call-control small" id="holdBtn"><i data-lucide="pause"></i><span>Hold</span></button>
       <button class="call-control small" id="speakerBtn"><i data-lucide="volume-2"></i><span>Speaker</span></button>
     </section>
@@ -1841,6 +1841,6 @@
   lucide.createIcons();
 })();
 </script>
-<script src="demo-call.js?v=20261010-simulated-call"></script>
+<script src="demo-call.js?v=20261011-polished-controls"></script>
 </body>
 </html>
