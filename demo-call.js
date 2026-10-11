@@ -4,7 +4,7 @@
 'use strict';
 if(!document.body.classList.contains('page-call'))return;
 const $=id=>document.getElementById(id);
-let active=false,seconds=0,tick=null,sequence=[],index=0;
+let active=false,transcriptStarted=false,seconds=0,tick=null,sequence=[],index=0;
 const messages=[
  ['You','Hello! This is User with Steady Hands. Is now a good time to speak?'],
  ['Business','Hi! I have a minute. What is this regarding?'],
@@ -37,7 +37,8 @@ function button(){
  window.lucide?.createIcons();
 }
 function stop(){
- active=false;clearInterval(tick);tick=null;sequence.forEach(clearTimeout);sequence=[];
+ active=false;transcriptStarted=false;clearInterval(tick);tick=null;sequence.forEach(clearTimeout);sequence=[];
+ updateTranscriptButton();
  renderStatus('Demo Call Ended','ended');statusText('Example transcript · Demo ended');
  window.steadyHandsDemoCallSeconds=seconds;button();
  // Each end-call action opens the same multi-step questionnaire as the real app.
@@ -46,30 +47,45 @@ function stop(){
 }
 function start(){
  if(active || document.querySelector('.post-call-overlay'))return;
- active=true;seconds=0;index=0;
+ active=true;transcriptStarted=false;seconds=0;index=0;
+ updateTranscriptButton();
  const list=$('liveTranscriptList');if(list)list.innerHTML='';
  const time=$('callTimer');if(time)time.textContent='00:00';
  const wrap=$('callTimerWrap');if(wrap)wrap.hidden=false;
- renderStatus('Connected · Demo','connected');statusText('Simulated transcript · Fictional conversation');
+ renderStatus('Connected · Demo','connected');statusText('Transcript is off · Press Start Transcript to begin');
  button();
  tick=setInterval(()=>{
   if(!active)return;
   seconds++;
   if(time)time.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
  },1000);
- // Show a natural paced conversation, but do not require audio or device permissions.
- messages.forEach(([speaker,text],i)=>sequence.push(setTimeout(()=>{if(active){index=i+1;transcript(speaker,text)}},1200+i*3600)));
- sequence.push(setTimeout(()=>{if(active){statusText('Example transcript complete · End the demo call when ready')}},1600+messages.length*3600));
+
+}
+function updateTranscriptButton(){
+ const b=$('enableLiveTranscript');
+ if(!b)return;
+ b.disabled=!active || transcriptStarted;
+ b.innerHTML=transcriptStarted?'Transcript Running': 'Start Transcript';
+ b.setAttribute('aria-label',transcriptStarted?'Transcript running':'Start transcript');
+}
+function startTranscript(){
+ if(!active || transcriptStarted)return;
+ transcriptStarted=true;
+ updateTranscriptButton();
+ statusText('Simulated transcript · Fictional conversation');
+ messages.forEach(([speaker,text],i)=>sequence.push(setTimeout(()=>{
+  if(active&&transcriptStarted){index=i+1;transcript(speaker,text)}
+ },1200+i*3600)));
+ sequence.push(setTimeout(()=>{
+  if(active&&transcriptStarted)statusText('Example transcript complete');
+ },1600+messages.length*3600));
 }
 function capture(event){
  const b=event.target.closest?.('#hangupBtn, #enableLiveTranscript');
  if(!b)return;
  event.preventDefault();event.stopImmediatePropagation();event.stopPropagation();
  if(b.id==='hangupBtn'){active?stop():start();}
- else {
-  if(!active)start();
-  else statusText('Simulated transcript is already enabled');
- }
+ else startTranscript();
 }
 document.addEventListener('click',capture,true);
 window.steadyHandsDemoResetButton=button;
@@ -77,5 +93,5 @@ window.addEventListener('pagehide',()=>{clearInterval(tick);sequence.forEach(cle
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',button);else button();
 const text=document.querySelector('#transcriptSection .live-transcript-head p');
 if(text)text.textContent='Simulated example conversation · No real phone call or microphone';
-const enable=$('enableLiveTranscript');if(enable){enable.disabled=false;enable.innerHTML='View Demo Transcript';enable.removeAttribute('title');}
+const enable=$('enableLiveTranscript');if(enable){enable.removeAttribute('title');updateTranscriptButton();}
 })();
