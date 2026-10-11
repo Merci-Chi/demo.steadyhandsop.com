@@ -38,10 +38,14 @@ function button(){
 }
 function stop(){
  active=false;clearInterval(tick);tick=null;sequence.forEach(clearTimeout);sequence=[];
- renderStatus('Demo Call Ended','ended');statusText('Example transcript · Demo ended');button();
+ renderStatus('Demo Call Ended','ended');statusText('Example transcript · Demo ended');
+ window.steadyHandsDemoCallSeconds=seconds;button();
+ // Each end-call action opens the same multi-step questionnaire as the real app.
+ if(typeof window.steadyHandsOpenDemoQuestionnaire==='function')window.steadyHandsOpenDemoQuestionnaire();
+ else console.error('Demo questionnaire could not be opened');
 }
 function start(){
- if(active)return;
+ if(active || document.querySelector('.post-call-overlay'))return;
  active=true;seconds=0;index=0;
  const list=$('liveTranscriptList');if(list)list.innerHTML='';
  const time=$('callTimer');if(time)time.textContent='00:00';
@@ -68,6 +72,7 @@ function capture(event){
  }
 }
 document.addEventListener('click',capture,true);
+window.steadyHandsDemoResetButton=button;
 window.addEventListener('pagehide',()=>{clearInterval(tick);sequence.forEach(clearTimeout)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',button);else button();
 const text=document.querySelector('#transcriptSection .live-transcript-head p');

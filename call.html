@@ -1700,7 +1700,7 @@
         <div class="pc-confirm">
           <div class="pc-check"><i data-lucide="check"></i></div>
           <h2>Call saved</h2>
-          <p>Your call result${data.tags.length ? ', tags' : ''}${data.notes.trim() ? ', notes' : ''} and transcript were saved.</p>
+          <p>${window.steadyHandsDemo ? 'This practice result will be saved on this device only. No real customer or database is contacted.' : `Your call result${data.tags.length ? ', tags' : ''}${data.notes.trim() ? ', notes' : ''} and transcript were saved.`}</p>
           <div class="pc-confirm-summary">
             <strong>${data.rating}</strong>
             ${data.outcomes.length ? `<span>${data.outcomes.join(' • ')}</span>` : ''}
@@ -1717,6 +1717,49 @@
           ...data.outcomes,
           data.route === 'callback' ? 'Call Back' : data.route === 'notinterested' ? 'Not Interested' : ''
         ].filter(Boolean).join(' • ') || "Didn't call";
+
+        // Training mode: keep the normal questionnaire, but save locally only.
+        // Do not invoke CRM, Twilio, Supabase, or server-backed activity/transcript functions.
+        if (window.steadyHandsDemo === true) {
+          try {
+            const key = 'steadyhands-offline-demo-v1';
+            const stored = JSON.parse(localStorage.getItem(key) || '{}');
+            const now = new Date().toISOString();
+            const id = 'demo-questionnaire-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+            const record = {
+              id, user_id:'demo-user', crm_id:crmId,
+              duration_seconds: window.steadyHandsDemoCallSeconds || 0,
+              outcome:finalOutcome, created_at:now,
+              rating:data.rating, outcomes:[...data.outcomes], reason:data.reason,
+              tags:[...data.tags], notes:data.notes, route:data.route,
+              demo_only:true
+            };
+            stored.callcenter_call_activity = [...(stored.callcenter_call_activity || []), record];
+            // Capture only the fictional lines shown in the demo transcript.
+            const fictionalLines = [...document.querySelectorAll('#liveTranscriptList .demo-transcript-line')]
+              .map(line => ({speaker:line.querySelector('strong')?.textContent || 'Speaker',text:line.querySelector('p')?.textContent || ''}));
+            if (fictionalLines.length) {
+              stored.callcenter_transcripts = [...(stored.callcenter_transcripts || []), {
+                id:'demo-transcript-' + Date.now(), activity_id:id, user_id:'demo-user',
+                crm_id:crmId, outcome:finalOutcome, created_at:now,
+                transcript:fictionalLines.map(line => line.speaker + ': ' + line.text).join('\n'),
+                segments:fictionalLines, demo_only:true
+              }];
+            }
+            localStorage.setItem(key,JSON.stringify(stored));
+          } catch (error) {
+            console.error('Unable to save the demo questionnaire locally:',error);
+            alert('This device could not save the demo response. Check browser storage and try again.');
+            return;
+          }
+          overlay.remove();
+          questionnaireOpen = false;
+          // Do not mark fake leads as blocked: allow another practice call anytime.
+          setState('ended');
+          syncMainCallButton();
+          window.steadyHandsDemoResetButton?.();
+          return;
+        }
 
         // A completed dialing attempt is no longer a new lead, even if nobody answered.
         // "Didn't call" does not consume the lead; its questionnaire is still logged.
@@ -1838,9 +1881,12 @@
     render();
   }
 
+  // Public local-demo hook to use the exact existing post-call questionnaire.
+  if (window.steadyHandsDemo === true) window.steadyHandsOpenDemoQuestionnaire = openPostCallFlow;
+
   lucide.createIcons();
 })();
 </script>
-<script src="demo-call.js?v=20261011-polished-controls"></script>
+<script src="demo-call.js?v=20261011-questionnaire-local-1"></script>
 </body>
 </html>
