@@ -440,6 +440,8 @@ async function callcenterFunctionErrorMessage(error, fallback) {
 }
 
 async function callcenterEnsurePhoneApproved() {
+  // Offline training demo: no real calls, SMS, or phone approval.
+  if (window.steadyHandsDemo === true) return true;
   const client = await callcenterGetPhoneApprovalClient();
   if (!client) {
     showToast('Unable to check phone verification');
