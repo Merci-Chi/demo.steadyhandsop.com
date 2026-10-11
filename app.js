@@ -1838,8 +1838,7 @@ function setupOutreach() {
 
       params.set('build', '20261003-mic-permission-2');
 
-      const approvedToCall = await callcenterEnsurePhoneApproved();
-      if (!approvedToCall) return;
+      // Fictional demo leads open the simulated call screen directly.
 
       const callHref = `call.html?${params.toString()}`;
       window.callcenterSetResumeLocation?.(callHref, company);
