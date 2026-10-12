@@ -15,6 +15,6 @@ function append(){const rows=lines();if(step>=rows.length){stopTranscript();$('#
 function stopTranscript(){clearInterval(play);play=null;playing=false;const b=$('#demoTranscriptToggle');if(b)b.textContent=step>=lines().length?'↻ Restart Transcript':'▶ Start Transcript';}
 function toggleTranscript(){if(playing){stopTranscript();$('#demoCallStatus').textContent='Transcript paused · call active';return;}if(step>=lines().length){step=0;$('#demoCallTranscript').innerHTML='';}playing=true;$('#demoTranscriptToggle').textContent='⏸ Stop Transcript';$('#demoCallStatus').textContent='Fictional transcript playing';append();play=setInterval(append,2600);}
 function end(close=true){clearInterval(tick);tick=null;stopTranscript();if(close&&$('#demoCallOverlay'))$('#demoCallOverlay').hidden=true;}
-document.addEventListener('click',e=>{const b=e.target.closest?.('#refRegularPhone,#refAppPhone');if(!b)return; e.preventDefault();e.stopImmediatePropagation();const id=b.id;startCall(id==='refRegularPhone'?'Regular Phone':'Call Through Outreach');},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('#refRegularPhone,#refAppPhone');if(!b)return; e.preventDefault();e.stopImmediatePropagation();const id=b.id;const contact=lead();const url=new URL('call.html',location.href);if(contact.id)url.searchParams.set('crm_id',contact.id);url.searchParams.set('demo_method',id==='refRegularPhone'?'regular':'outreach');location.href=url.href;},true);
 window.SteadyHandsDemoCall={start:startCall,end};
 })();
