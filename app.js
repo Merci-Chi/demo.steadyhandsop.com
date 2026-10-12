@@ -43,7 +43,6 @@ function callcenterUrlBase64ToUint8Array(base64String) {
 }
 
 async function callcenterSyncPushSubscription() {
-  if (window.SteadyHandsDemo) return false;
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
   if (!('Notification' in window) || Notification.permission !== 'granted') return false;
 
@@ -441,8 +440,6 @@ async function callcenterFunctionErrorMessage(error, fallback) {
 }
 
 async function callcenterEnsurePhoneApproved() {
-  // Fictional local demo: phone ownership verification is not required.
-  if (window.SteadyHandsDemo) return true;
   const client = await callcenterGetPhoneApprovalClient();
   if (!client) {
     showToast('Unable to check phone verification');
@@ -1674,80 +1671,21 @@ function setupOutreach() {
     e.stopPropagation();
     if (queueTransition) return;
 
-    const client = window.steadyHandsCRMClient;
-    if (!client) {
-      showToast('Unable to load a random lead.');
+    // Randomize only the assigned lead cards already loaded for this salesperson.
+    const eligible = [...leadContainer.querySelectorAll('.lead-card[data-crm-id]')]
+      .filter(card => card.dataset.crmId && card !== selectedCard);
+    if (!eligible.length) {
+      showToast('No other assigned leads are available.');
       return;
     }
-
-    queueTransition = true;
-    const previousHeight = Math.ceil(leadContainer.getBoundingClientRect().height);
-    const overlay = document.createElement('div');
-    overlay.className = 'lead-skeleton-overlay';
-    overlay.innerHTML = skeletonMarkup();
-
-    leadContainer.style.minHeight = `${previousHeight}px`;
-    leadContainer.classList.add('leads-switching');
-    leadContainer.setAttribute('aria-busy', 'true');
-    leadContainer.appendChild(overlay);
-    refreshIcons();
-
-    try {
-      const { count, error: countError } = await client
-        .from('preview_inventory')
-        .select('url', { count: 'exact', head: true })
-        .not('crm_id', 'is', null);
-
-      if (countError) throw countError;
-      if (!count) throw new Error('No approved previews found.');
-
-      const currentId = selectedCard?.dataset.crmId || '';
-      let picked = null;
-
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const offset = Math.floor(Math.random() * count);
-
-        const { data, error } = await client
-          .from('preview_inventory')
-          .select('url,crm_id')
-          .not('crm_id', 'is', null)
-          .order('url', { ascending: true })
-          .range(offset, offset);
-
-        if (error) throw error;
-
-        picked = data?.[0] || null;
-
-        if (picked && (picked.crm_id !== currentId || count === 1)) {
-          break;
-        }
+    const next = eligible[Math.floor(Math.random() * eligible.length)];
+    changeLeads(() => {
+      selectedCard = next;
+      renderQueue(false);
+      if (next.dataset.crmId) {
+        sessionStorage.setItem('steadyhands-selected-outreach-crm-id', next.dataset.crmId);
       }
-
-      if (!picked?.crm_id || !crmUrl(picked.url)) {
-        throw new Error('Random lead could not be loaded.');
-      }
-
-      sessionStorage.setItem('steadyhands-selected-outreach-crm-id', String(picked.crm_id));
-      sessionStorage.setItem(
-        'steadyhands-global-random-lead',
-        JSON.stringify({
-          crm_id: picked.crm_id,
-          url: picked.url
-        })
-      );
-
-      window.location.reload();
-    } catch (error) {
-      console.error('Unable to load random lead:', error);
-
-      overlay.remove();
-      leadContainer.classList.remove('leads-switching');
-      leadContainer.removeAttribute('aria-busy');
-      leadContainer.style.minHeight = '';
-      queueTransition = false;
-
-      showToast('Unable to load a random lead. Try again.');
-    }
+    });
   });
 
   if (label.includes('next')) btn.addEventListener('click', e => {
@@ -1795,7 +1733,7 @@ function setupOutreach() {
 
       const card = btn.closest('.lead-card');
 
-      if (!window.SteadyHandsDemo && card?.dataset.notInterested === 'true') {
+      if (card?.dataset.notInterested === 'true') {
         showToast('This client is listed as not interested');
         return;
       }
@@ -1821,9 +1759,6 @@ function setupOutreach() {
       });
 
       params.set('build', '20261003-mic-permission-2');
-
-      const approvedToCall = window.SteadyHandsDemo ? true : await callcenterEnsurePhoneApproved();
-      if (!approvedToCall) return;
 
       const callHref = `call.html?${params.toString()}`;
       window.callcenterSetResumeLocation?.(callHref, company);
@@ -2434,7 +2369,7 @@ function setupAccount() {
 
       if (label === 'Log Out') return modal('Log Out', '<p class="modal-help">Are you sure you want to log out?</p>', [
 
-        { label: 'Cancel' }, { label: 'Log Out', danger: true, onClick: async close => { close(); try { const client = window.steadyHandsCRMClient || (window.supabase && window.supabase.createClient(SH_SUPABASE_URL, SH_PUBLISHABLE_KEY)); if (client) await client.auth.signOut(); window.callcenterClearResumeLocation?.(); sessionStorage.removeItem('callcenter-resume-checked'); window.location.replace('index.html'); } catch(error) {console.error('Sign out failed:',error); showToast('Unable to sign out. Try again.');} } }
+        { label: 'Cancel' }, { label: 'Log Out', danger: true, onClick: async close => { close(); try { const client = window.steadyHandsCRMClient || (window.supabase && window.supabase.createClient(SH_SUPABASE_URL, SH_PUBLISHABLE_KEY)); if (client) await client.auth.signOut(); window.callcenterClearResumeLocation?.(); sessionStorage.removeItem('callcenter-resume-checked'); window.location.replace('login.html'); } catch(error) {console.error('Sign out failed:',error); showToast('Unable to sign out. Try again.');} } }
 
       ]);
 
@@ -2465,12 +2400,8 @@ function crmText(v) { return String(v ?? ''); }
 function crmEscape(v) { return crmText(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 
 function crmUrl(v) {
-  if (window.SteadyHandsDemo) { try { const url=new URL(crmText(v)); return url.protocol==='https:' ? url.href : '';  } catch { return ''; } }
-
-  try { const url = new URL(crmText(v)); return url.protocol === 'https:' && url.hostname === 'viewyoursite.today' && url.pathname.startsWith('/Sites/') ? url.href : ''; }
-
+  try { const u = new URL(crmText(v)); return u.protocol === 'https:' && u.hostname === 'steadyhandsop.com' && /^\/Previews\/[a-z0-9-]+\.html$/i.test(u.pathname) && !!u.searchParams.get('sitekey') ? u.href : ''; }
   catch { return ''; }
-
 }
 
 function crmTags(data) {
@@ -2755,7 +2686,7 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
 
   const urls = [...new Set(siteURLs.map(crmUrl).filter(Boolean))];
 
-  const links = urls.map((url,i)=>`<a class="preview-link" target="_blank" rel="noopener noreferrer" href="demo-preview.html"><i data-lucide="external-link"></i> ${urls.length > 1 ? `Preview ${i + 1}` : 'Open Website Preview'}</a>`).join('');
+  const links = urls.map((url,i)=>`<a class="preview-link" target="_blank" rel="noopener noreferrer" href="${crmEscape(url)}"><i data-lucide="external-link"></i> ${urls.length > 1 ? `Preview ${i + 1}` : 'Open Website Preview'}</a>`).join('');
 
   const card=document.createElement('section');
 
@@ -2809,7 +2740,7 @@ function makeCRMLinkCard(lead, siteURLs, searchMatch = null) {
 
       <div class="notes"><div class="notes-title"><i data-lucide="notebook-pen"></i> CRM Notes</div><p>${crmEscape(notes || 'No notes added yet.')}</p></div>
 
-      <button class="call-btn" type="button" data-select-lead ${window.SteadyHandsDemo ? '' : (phone ? '' : 'disabled')}><i data-lucide="check-circle-2"></i> ${window.SteadyHandsDemo ? 'Open Call Screen' : (phone ? 'Select Lead' : 'No Phone Number')}</button>
+      <button class="call-btn" type="button" data-select-lead ${phone ? '' : 'disabled'}><i data-lucide="check-circle-2"></i> ${phone ? 'Select Lead' : 'No Phone Number'}</button>
 
       <div class="quick-actions"><button class="quick-btn" type="button"><i data-lucide="shuffle"></i>Next Random Lead</button><button class="quick-btn calendar-btn" type="button"><i data-lucide="calendar-plus"></i>Add to Calendar</button></div>
 
@@ -2829,7 +2760,7 @@ const CRM_SEARCH_TAGS = [
   'No Website','Spanish?'
 ];
 
-const CRM_SEARCH_SOURCES = ['Facebook','Instagram','Nextdoor','Google','Google Maps','Found online','Yelp','LinkedIn','TikTok','Booksy','ViewYourSite','Other'];
+const CRM_SEARCH_SOURCES = ['Facebook','Instagram','Nextdoor','Google','Google Maps','Found online','Yelp','LinkedIn','TikTok','Booksy','Other'];
 const crmNormalizeSource = v => crmText(v).trim().toLowerCase().replace(/[ _-]+/g,' ');
 const crmSourceClass = v => { const x=crmNormalizeSource(v); return x.includes('instagram')?'source-instagram':x.includes('facebook')?'source-facebook':x.includes('nextdoor')?'source-nextdoor':x.includes('google')?'source-google': 'source-other'; };
 const crmList = value => { if(Array.isArray(value)) return value; if(typeof value === 'string'){try { const parsed=JSON.parse(value);return Array.isArray(parsed)?parsed:[value]; }catch {return value?[value]:[]}} return []; };
@@ -2935,6 +2866,7 @@ async function crmFetchAllForPhoneSearch(client, selectedTags = [], selectedSour
     let page = client
       .from('crm')
       .select('id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,previewurl,sitekey,has_site_preview,state_code')
+      .eq('assigned_user_id', window.steadyHandsOutreachUserId)
       .is('lastcalled', null)
       .neq('stage', 'notinterested')
       .range(from, from + PAGE_SIZE - 1);
@@ -2956,7 +2888,7 @@ function crmTemplatePreviewUrl(siteKey, templateKey) {
   const key = String(siteKey || '').trim();
   const slug = String(templateKey || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!key || !slug) return '';
-  return 'https://steadyhandsop.com/Previews/' + encodeURIComponent(slug) + '.html?sitekey=' + encodeURIComponent(key);
+  return window.SteadyHandsPreviews?.templateUrl(key,slug) || ''; 
 }
 
 async function crmFetchSiteKeyPreviewURLs(client, leads) {
@@ -2976,33 +2908,6 @@ async function crmFetchSiteKeyPreviewURLs(client, leads) {
   return result;
 }
 
-async function crmFetchPreviewURLs(client, ids) {
-  const map = new Map();
-  if (!ids.length) return map;
-
-  for (let i = 0; i < ids.length; i += 80) {
-    const { data, error } = await client
-      .from('preview_inventory')
-      .select('url,crm_id')
-      .in('crm_id', ids.slice(i, i + 80))
-      .order('url', { ascending: true });
-
-    if (error) {
-      console.warn('Unable to load search preview links:', error);
-      continue;
-    }
-
-    for (const row of data || []) {
-      const url = crmUrl(row.url);
-      if (!row.crm_id || !url) continue;
-      const urls = map.get(row.crm_id) || [];
-      if (!urls.includes(url)) urls.push(url);
-      map.set(row.crm_id, urls);
-    }
-  }
-
-  return map;
-}
 
 function crmKeepSearchControlsAtTop() { /* Search does not scroll the page. */ }
 
@@ -3079,6 +2984,7 @@ async function crmRunGlobalSearch() {
     let db = client
       .from('crm')
       .select('id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,previewurl,sitekey,has_site_preview,state_code')
+      .eq('assigned_user_id', window.steadyHandsOutreachUserId)
       .is('lastcalled', null)
       .neq('stage', 'notinterested')
       .limit(100);
@@ -3129,12 +3035,11 @@ async function crmRunGlobalSearch() {
     });
   }
 
-  const siteMap = await crmFetchPreviewURLs(client, leads.map(lead => lead.id));
-  const keySiteMap = await crmFetchSiteKeyPreviewURLs(client, leads);
+    const keySiteMap = await crmFetchSiteKeyPreviewURLs(client, leads);
   if (requestId !== crmSearchState.requestId) return;
 
   box.replaceChildren(...leads.filter(lead => String(lead.id) !== String(q('#selectedLeadTop .lead-card')?.dataset.crmId || '')).slice(0, 10).map(lead => {
-    const urls = siteMap.get(lead.id) || [crmUrl(lead.previewurl), keySiteMap.get(lead.sitekey)].filter(Boolean);
+    const urls = [keySiteMap.get(lead.sitekey)].filter(Boolean);
     return makeCRMLinkCard(lead, urls, matches.get(String(lead.id)) || null);
   }));
 
@@ -3208,7 +3113,7 @@ async function loadLiveCRMTotals(client) {
   const totalNode = q('#crmTotalLeads');
   if (!panel || !totalNode) return;
   try {
-    const { count, error } = await client.from('crm').select('id', { count: 'exact', head: true });
+    const { count, error } = await client.from('crm').select('id', { count: 'exact', head: true }).eq('assigned_user_id', window.steadyHandsOutreachUserId);
     if (error) throw error;
     if (count == null) throw new Error('CRM count unavailable.');
     totalNode.textContent = new Intl.NumberFormat('en-US').format(count);
@@ -3274,7 +3179,7 @@ async function loadApprovedPreviewCRM(options = {}) {
       throw new Error('Unable to verify employee access: ' + permissionError.message);
     }
     const canViewLeads = permission?.active === true &&
-      ['SALES', 'BUILDER', 'MOD', 'ADMIN'].includes(permission.role);
+      permission.role === 'SALES';
     if (!canViewLeads) {
       status.style.display = '';
       status.textContent = "You currently don't have access to view the leads. Please contact your administrator.";
@@ -3343,207 +3248,34 @@ async function loadApprovedPreviewCRM(options = {}) {
   `).join('');
 
   try {
-    const TARGET_LEADS = window.SteadyHandsDemo ? 100 : 80;
-    const INVENTORY_PAGE = 100;
-    const MAX_INVENTORY_PAGES = 30;
-    const byCRM = new Map();
-
-    let forcedRandom = null;
-
-    try {
-      forcedRandom = JSON.parse(
-        sessionStorage.getItem('steadyhands-global-random-lead') || 'null'
-      );
-    } catch {}
-
-    sessionStorage.removeItem('steadyhands-global-random-lead');
-
-    const requestedCRMId = new URLSearchParams(location.search).get('crm_id');
-    if (requestedCRMId) {
-      forcedRandom = { crm_id: requestedCRMId, url: '' };
-      history.replaceState({}, '', 'index.html');
+    // SECURITY: select by authenticated salesperson assignment at query time.
+    // Do not enumerate global preview_inventory or unrestricted CRM rows.
+    const userId = outreachSession.user.id;
+    const { data: assigned, error: assignedError } = await client
+      .from('crm')
+      .select('id,company,name,phone,notes,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,state_code,sitekey,previewurl,assigned_user_id')
+      .eq('assigned_user_id', userId)
+      .eq('admin_archived', false)
+      .order('created', { ascending: false })
+      .limit(1000);
+    if (assignedError) throw assignedError;
+    const leads = (assigned || []).filter(callcenterIsFreshLead);
+    const selectedId = new URLSearchParams(location.search).get('crm_id') ||
+      (() => { try { return sessionStorage.getItem('steadyhands-selected-outreach-crm-id') || ''; } catch { return ''; } })();
+    const selectedLead = leads.find(lead => lead.id === selectedId);
+    const ordered = callcenterShuffle(leads);
+    if (selectedLead) {
+      const index = ordered.findIndex(lead => lead.id === selectedLead.id);
+      if (index >= 0) ordered.splice(index, 1);
+      ordered.unshift(selectedLead);
+      window.steadyHandsForcedCRMId = selectedLead.id;
     }
-
-    if (forcedRandom?.crm_id) {
-      const { data, error } = await client
-        .from('preview_inventory')
-        .select('url,crm_id')
-        .eq('crm_id', forcedRandom.crm_id)
-        .order('url', { ascending: true })
-        .limit(20);
-
-      if (!error && data?.length) {
-        const urls = data
-          .map(item => crmUrl(item.url))
-          .filter(Boolean);
-
-        if (urls.length) {
-          byCRM.set(
-            forcedRandom.crm_id,
-            [...new Set(urls)]
-          );
-        }
-      } else {
-        byCRM.set(
-          forcedRandom.crm_id,
-          [forcedRandom.url]
-        );
-      }
-    }
-
-    for (
-      let page = 0;
-      page < MAX_INVENTORY_PAGES &&
-      byCRM.size < TARGET_LEADS;
-      page++
-    ) {
-      const from = page * INVENTORY_PAGE;
-
-      const { data, error } = await client
-        .from('preview_inventory')
-        .select('url,crm_id')
-        .not('crm_id', 'is', null)
-        .order('url', { ascending: true })
-        .range(
-          from,
-          from + INVENTORY_PAGE - 1
-        );
-
-      if (error) {
-        throw new Error(
-          'Preview inventory: ' + error.message
-        );
-      }
-
-      for (const item of data || []) {
-        const url = crmUrl(item.url);
-
-        if (!item.crm_id || !url) {
-          continue;
-        }
-
-        const urls = byCRM.get(item.crm_id) || [];
-
-        if (!urls.includes(url)) {
-          urls.push(url);
-        }
-
-        byCRM.set(item.crm_id, urls);
-
-        if (byCRM.size >= TARGET_LEADS) {
-          break;
-        }
-      }
-
-      if (
-        !data ||
-        data.length < INVENTORY_PAGE
-      ) {
-        break;
-      }
-    }
-
-    // Include template-based previews, even without preview_inventory entries.
-    const { data: keyLeads, error: keyLeadError } = await client.from('crm')
-      .select('id,sitekey,stage,outcome,lastcalled')
-      .not('sitekey','is',null)
-      .is('lastcalled',null)
-      .neq('stage','notinterested')
-      .order('created',{ascending:false})
-      .limit(80);
-    if (keyLeadError) console.warn('Site-key lead lookup failed',keyLeadError);
-    const activeKeyLeads = (keyLeads || []).filter(callcenterIsFreshLead);
-    const keyPreviewMap = await crmFetchSiteKeyPreviewURLs(client,activeKeyLeads);
-    for (const lead of activeKeyLeads) {
-      const url = keyPreviewMap.get(lead.sitekey);
-      if (url && !byCRM.has(lead.id)) byCRM.set(lead.id,[url]);
-    }
-
-    const ids = [...new Set([...activeKeyLeads.filter(lead => keyPreviewMap.has(lead.sitekey)).map(lead => lead.id), ...byCRM.keys()])]
-      .slice(0, TARGET_LEADS);
-
-    if (!ids.length) {
-      throw new Error(
-        'No approved preview leads returned.'
-      );
-    }
-
-    const leads = [];
-
-    for (
-      let i = 0;
-      i < ids.length;
-      i += 80
-    ) {
-      const { data, error } = await client
-        .from('crm')
-        .select(
-          'id,company,name,phone,notes,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,state_code,sitekey,previewurl'
-        )
-        .in(
-          'id',
-          ids.slice(i, i + 80)
-        )
-        ;
-
-      if (error) {
-        throw new Error(
-          'CRM: ' + error.message
-        );
-      }
-
-      leads.push(...(data || []));
-    }
-
-    if (!leads.length) {
-      throw new Error(
-        'No matching CRM leads returned.'
-      );
-    }
-
-    // Keep Outreach fast: randomize the already-loaded leads in memory
-    // instead of issuing extra database queries just to randomize their order.
-    const randomizedLeads = callcenterShuffle(leads);
-    leads.splice(0, leads.length, ...randomizedLeads);
-
-    if (forcedRandom?.crm_id) {
-      const index = leads.findIndex(
-        lead =>
-          lead.id === forcedRandom.crm_id
-      );
-
-      if (index >= 0) {
-        const [randomLead] = leads.splice(index, 1);
-        // The globally-selected Random lead stays first; every lead below it
-        // remains independently shuffled, including the 10 visible cards.
-        leads.unshift(randomLead);
-      }
-
-      window.steadyHandsForcedCRMId =
-        forcedRandom.crm_id;
-    }
-
-    const activeLeads = leads.filter(lead => {
-      const values = [
-        lead.stage,
-        lead.outcome,
-        ...crmTags(lead)
-      ].map(value => crmText(value).toLowerCase());
-
-      return callcenterIsFreshLead(lead);
-    });
-
-    box.replaceChildren(
-      ...activeLeads.map(lead =>
-        makeCRMLinkCard(
-          lead,
-          byCRM.get(lead.id) || []
-        )
-      )
-    );
-
-    status.textContent = '';
-    status.style.display = 'none';
+    const keys = await crmFetchSiteKeyPreviewURLs(client, ordered);
+    box.replaceChildren(...ordered.map(lead => makeCRMLinkCard(
+      lead, [keys.get(lead.sitekey)].filter(Boolean)
+    )));
+    status.style.display = ordered.length ? 'none' : '';
+    status.textContent = ordered.length ? '' : 'No assigned leads available. Ask your administrator to assign leads.';
 
     // User-specific Outreach stats are loaded from callcenter_call_activity in user-data.js.\n\n    setupCopyButtons();
     setupOutreach();

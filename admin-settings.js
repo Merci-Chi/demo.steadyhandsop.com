@@ -122,7 +122,7 @@
           <div class="admin-section-head">
             <div>
               <h2>Outbound Phone Numbers</h2>
-              <p>Demo calling is available without setup.</p>
+              <p>Run the caller-ID SQL migration first, then refresh this page.</p>
             </div>
           </div>
           <div class="admin-empty">

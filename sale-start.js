@@ -16,7 +16,7 @@ button.addEventListener('click',()=>{
   const payload={p_crm_id:crmId,p_company_name:company,p_preview_url:preview,p_customer_email:customerEmail,p_hosting_plan:layer.querySelector('#shSalePlan').value,p_stage:'interested',p_follow_up_at:null,p_notes:layer.querySelector('#shSaleNotes').value.trim()||null};
   const {data:saleId,error:saleError}=await client.rpc('sh_start_sale',payload);if(saleError)throw Error('Could not save the sale: '+saleError.message);
   const {data:token,error:inviteError}=await client.rpc('sh_create_portal_invite',{p_sale_id:saleId,p_email:customerEmail});
-  if(inviteError)throw Error('Sale saved, but registration link could not be created: '+inviteError.message+'');
+  if(inviteError)throw Error('Sale saved, but registration link could not be created: '+inviteError.message+' (Run Batch 1 SQL.)');
   if(!token||typeof token!=='string')throw Error('The server did not return an invitation token.');
   const link=portalOrigin+'/login.html?invite='+encodeURIComponent(token);
   layer.querySelector('#shSaleLink').value=link;layer.querySelector('#shSaleResult').hidden=false;submit.hidden=true;

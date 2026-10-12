@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><script>location.replace("index.html")</script>
+<html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#102a56"><title>Log In | Steady Hands Outreach</title>
 <link rel="icon" href="https://onboard.steadyhandsop.com/images/logo.png">
@@ -7,8 +7,47 @@
 <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png">
 <link rel="stylesheet" href="login-onboard.css?v=20261010-controls-v2">
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="app-update.js" defer></script>
-</head><body>
+
+<style>
+.demo-welcome-overlay{position:fixed;inset:0;z-index:99999;background:rgba(8,23,44,.77);display:grid;place-items:center;padding:20px;backdrop-filter:blur(5px)}
+.demo-welcome-card{width:min(100%,470px);background:#fff;color:#10243e;border-radius:24px;padding:34px 32px 30px;box-shadow:0 22px 75px rgba(3,16,37,.33);font-family:inherit;text-align:center}
+.demo-welcome-symbol{width:64px;height:64px;display:grid;place-items:center;border-radius:19px;margin:0 auto 18px;background:#e9f4ff;color:#087dff}
+.demo-welcome-symbol svg{width:33px;height:33px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.demo-welcome-card h2{font-size:26px;line-height:1.2;margin:0 0 12px;font-weight:800;color:#0f2745}
+.demo-welcome-card p{color:#5b6d83;font-size:15px;line-height:1.6;margin:0 0 20px}
+.demo-welcome-details{border-radius:16px;background:#f3f7fc;padding:17px 19px;margin:0 0 23px;text-align:left}
+.demo-welcome-details div{display:flex;align-items:flex-start;gap:11px;margin:9px 0;color:#344961;font-size:14px;line-height:1.5}
+.demo-welcome-details svg{width:19px;height:19px;flex-shrink:0;stroke:#0982ff;stroke-width:2.5;fill:none;margin-top:1px}
+.demo-welcome-continue{display:block;width:100%;border:0;border-radius:13px;background:#087dff;color:white;font-size:16px;font-weight:750;padding:15px;cursor:pointer}
+.demo-welcome-continue:focus-visible{outline:3px solid #73b8ff;outline-offset:3px}
+.demo-welcome-note{display:block;margin-top:15px;font-size:12px;color:#8290a0}
+@media(max-width:520px){.demo-welcome-card{padding:27px 22px}.demo-welcome-card h2{font-size:23px}}
+</style></head><body><div class="demo-welcome-overlay" id="demoWelcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="demoWelcomeTitle" aria-describedby="demoWelcomeDescription">
+  <div class="demo-welcome-card">
+    <span class="demo-welcome-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M9 8l6 3.5L9 15z"/></svg></span>
+    <h2 id="demoWelcomeTitle">Welcome to the Steady Hands Demo</h2>
+    <p id="demoWelcomeDescription">Explore Outreach in a safe, simulated workspace designed to show you how the platform works.</p>
+    <div class="demo-welcome-details">
+      <div><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Sign in using the demo login credentials provided to you.</span></div>
+      <div><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>All contacts, account details, and sales information are fictional.</span></div>
+      <div><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Calls, messages, and transactions are simulated. Nothing is sent or charged.</span></div>
+    </div>
+    <button type="button" class="demo-welcome-continue" id="demoWelcomeContinue">Continue to Sign In →</button>
+    <small class="demo-welcome-note">For demonstration and training purposes only.</small>
+  </div>
+</div>
+<script>
+(function(){
+  const overlay=document.getElementById('demoWelcomeOverlay');
+  const button=document.getElementById('demoWelcomeContinue');
+  if(!overlay||!button)return;
+  const previous=document.activeElement;
+  const dismiss=()=>{overlay.remove();document.getElementById('loginEmail')?.focus();};
+  button.addEventListener('click',dismiss);
+  overlay.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();button.focus();}});
+  button.focus();
+})();
+</script>
 <div id="outreachIntro" class="outreach-intro" aria-hidden="true">
   <div class="outreach-intro-brand"><img src="images/icon-192.png" alt="" /><span>STEADY HANDS</span></div>
 </div>
@@ -51,6 +90,6 @@
 </div><button id="signInButton" class="primary-button full outreach-login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button><button class="text-btn outreach-forgot" id="forgotPassword" type="button">Forgot password?</button>
 </form><p class="foot outreach-login-foot">Authorized team access only</p>
 </div></main></div>
-<script src="demo-data.js?v=20261011-demo3"></script>
-<script src="login.js?v=20261003-terms-validation"></script>
-</body></html>
+<script src="demo-data.js"></script><script src="demo-supabase.js"></script>
+
+<script src="login.js"></script></body></html>

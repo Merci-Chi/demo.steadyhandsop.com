@@ -128,58 +128,6 @@
   }
 
 
-  // Demo-only editing for the selected Outreach lead; use the app's existing modal classes.
-  function openDemoLeadTool(card, kind){
-    const id=card?.dataset.crmId;
-    const db=window.SteadyHandsDemo?.data;
-    const lead=db?.crm?.find(item=>String(item.id)===String(id));
-    if(!lead)return;
-    document.querySelector('.app-modal-overlay')?.remove();
-    const overlay=document.createElement('div');
-    overlay.className='app-modal-overlay';
-    const notes=kind==='notes';
-    const options=['Broken Site','Outdated Site','Site Removed','Already have a website','Spanish?','Hot Lead','Interested','Call Back','Needs More Info','Skeptical','No Answer','Left Voicemail','Not Interested','Wrong Number','Conversion','Sold'];
-    let tags=lead.tags||[];
-    if(typeof tags==='string'){try{tags=JSON.parse(tags)}catch{tags=[tags]}}
-    const selectedTags=new Set(Array.isArray(tags)?tags:[]);
-    const company=card.querySelector('.sh-ref-company-heading h2')?.textContent||lead.company||'Lead';
-    overlay.innerHTML=`<div class="app-modal" role="dialog" aria-modal="true" aria-label="${notes?'Notes':'Tags'}">
-      <div class="app-modal-head"><h3>${notes?'Notes':'Tags'} — ${escapeHTML(company)}</h3><button type="button" class="app-modal-close" aria-label="Close"><i data-lucide="x"></i></button></div>
-      <div class="app-modal-body">${notes?'<p class="modal-help">Add or update notes for this business.</p><textarea class="modal-textarea" id="sh-demo-notes" placeholder="Add a note...">'+escapeHTML(lead.notes||'')+'</textarea>':'<p class="modal-help">Select the tags for this lead.</p><div class="call-tool-tag-picker" style="display:flex;flex-wrap:wrap;gap:8px">'+[...new Set([...options,...selectedTags])].map(tag=>'<button type="button" class="call-tag-choice '+(selectedTags.has(tag)?'selected':'')+'" data-demo-tag="'+escapeHTML(tag)+'" aria-pressed="'+selectedTags.has(tag)+'" style="border:1px solid #cbd5e1;border-radius:10px;padding:9px 12px;background:var(--card,#fff);color:var(--text,#17304d);cursor:pointer">'+escapeHTML(tag)+'</button>').join('')+'</div>'}</div>
-      <div class="app-modal-actions"><button class="modal-action" type="button" data-demo-cancel>Cancel</button><button class="modal-action primary" type="button" data-demo-save>Save ${notes?'Notes':'Tags'}</button></div>
-    </div>`;
-    document.body.appendChild(overlay);
-    const close=()=>overlay.remove();
-    overlay.querySelector('.app-modal-close').onclick=close;
-    overlay.querySelector('[data-demo-cancel]').onclick=close;
-    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
-    overlay.querySelectorAll('[data-demo-tag]').forEach(btn=>btn.addEventListener('click',()=>{
-      const tag=btn.dataset.demoTag;
-      if(selectedTags.has(tag))selectedTags.delete(tag);else selectedTags.add(tag);
-      btn.classList.toggle('selected',selectedTags.has(tag));
-      btn.setAttribute('aria-pressed',String(selectedTags.has(tag)));
-      btn.style.background=selectedTags.has(tag)?'#dbeafe':'var(--card,#fff)';
-      btn.style.borderColor=selectedTags.has(tag)?'#2563eb':'#cbd5e1';
-    }));
-    overlay.querySelectorAll('[data-demo-tag].selected').forEach(btn=>{btn.style.background='#dbeafe';btn.style.borderColor='#2563eb'});
-    overlay.querySelector('[data-demo-save]').onclick=()=>{
-      if(notes){
-        const value=overlay.querySelector('#sh-demo-notes').value.trim();lead.notes=value;
-        const parts=[card.querySelector('.sh-ref-notes p'),card.querySelector('.notes p'),activity?.querySelector('.workspace-activity-copy')];
-        parts.forEach(el=>{if(el)el.textContent=value||'No notes added yet.'});
-        const editor=quickNotes?.querySelector('#workspaceQuickNotesInput');if(editor)editor.value=value;
-      }else{
-        lead.tags=[...selectedTags];
-        const area=card.querySelector('.sh-ref-tags');
-        if(area)area.innerHTML=lead.tags.map(tag=>'<span class="sh-ref-tag">'+escapeHTML(tag)+'</span>').join('');
-      }
-      window.SteadyHandsDemo?.save?.();
-      close();
-    };
-    window.lucide?.createIcons?.();
-    if(notes)overlay.querySelector('#sh-demo-notes')?.focus();
-  }
-
   let lastEnhancedCard = null;
   function makeShowcase(card){
     if(card.classList.contains('sh-reference-ready')) return;
@@ -220,17 +168,10 @@
       if(!btn)return;
       if(btn.classList.contains('sh-ref-star')){originalStar?.click();return;}
       const action=btn.dataset.shAction;
-      if(action==='notes'||action==='tags')openDemoLeadTool(card,action);
-      else if(action==='preview'){window.location.href='demo-preview.html';}
-      else if(action==='call' && window.SteadyHandsDemo){
-        const params=new URLSearchParams({
-          company:card.querySelector('.lead-title h2')?.textContent?.trim()||'Demo Business',
-          contact:card.querySelector('.lead-title .name')?.textContent?.trim()||'',
-          number:'',role:'',preview:'demo-preview.html',
-          crm_id:card.dataset.crmId||'',timezone:card.dataset.timezone||''
-        });
-        window.location.href='call.html?'+params.toString();
-      }
+      if(action==='notes'){
+        document.getElementById('workspaceQuickNotesInput')?.focus();
+        document.getElementById('shQuickNotes')?.scrollIntoView({behavior:'smooth',block:'center'});
+      }else if(action==='preview'&&preview){preview.click();}
       else card.querySelector('.call-btn[data-select-lead]')?.click();
     });
     card.prepend(showcase);

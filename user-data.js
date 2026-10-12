@@ -91,7 +91,6 @@
   }
 
   function activityState(profile) {
-    if (window.SteadyHandsDemo) return {label:'Active',cls:'active',days:0};
     if (!profile) return { label:'Unknown', cls:'inactive', days:Infinity };
     if (profile.disabled_at) return { label:'Disabled', cls:'disabled', days:Infinity };
 
@@ -183,7 +182,6 @@
 
 
   async function maybeSendAccountActivityNotification(profile) {
-    if (window.SteadyHandsDemo) return;
     if (!profile) return;
 
     let deviceNotificationsEnabled = false;
@@ -268,8 +266,7 @@
   }
 
   async function showOnboarding(session, profile) {
-    if (window.SteadyHandsDemo) return;
-    if (!profile || profile.onboarding_completed || document.querySelector('.cc-overlay[data-onboarding]')) return;
+    if (window.SteadyHandsDemo?.enabled || !profile || profile.onboarding_completed || document.querySelector('.cc-overlay[data-onboarding]')) return;
     const c = client();
     const overlay = document.createElement('div');
     overlay.className = 'cc-overlay';
@@ -497,7 +494,7 @@
     setText('earnTotal', money(totalEarned));
     setText('commissionTotal', money(commissionComplete));
     setText('pendingPayoutTotal', money(totalPending));
-    setText('closedDeals', commissions.length);
+    setText('closedDeals', completed.length);
     setText('pipelineValue', money(allSalesValue));
 
     const chart = document.getElementById('weeklyEarningsChart');
@@ -524,6 +521,14 @@
           .reduce((sum,row) => sum + (Number(row.commission_amount_cents) || 0), 0);
       });
 
+      // Demo only: show an illustrative full week even when today is Monday.
+      // Live accounts retain their actual date-based chart values.
+      if (window.SteadyHandsDemo?.enabled) {
+        totals.fill(0);
+        completed.forEach((row, index) => {
+          totals[index % 7] += Number(row.commission_amount_cents) || 0;
+        });
+      }
       const max = Math.max(...totals, 1);
       chart.innerHTML = totals.map((value,index) => {
         const height = value ? Math.max(22, Math.round((value / max) * 88)) : 10;
@@ -542,7 +547,7 @@
           ? 'Waiting on client payment'
           : row.status === 'pending'
             ? 'Pending'
-            : 'Complete';
+            : 'Earned';
 
         const badgeClass = row.status === 'complete'
           ? 'paid'
@@ -1528,7 +1533,7 @@
     addStyles();
     const { session, profile, schemaReady, schemaError } = await getSessionAndProfile();
     if (!session) return;
-    if (!schemaReady || !profile) {
+    if (!window.SteadyHandsDemo?.enabled && (!schemaReady || !profile)) {
       renderSetupRequired(schemaError);
       return;
     }
@@ -1537,13 +1542,13 @@
     await maybeSendAccountActivityNotification(profile);
 
     const state = activityState(profile);
-    if (state.label === 'Disabled') {
+    if (!window.SteadyHandsDemo?.enabled && state.label === 'Disabled') {
       showDisabled(profile);
       return;
     }
 
     await showOnboarding(session, profile);
-    if (!profile.onboarding_completed) return;
+    if (!window.SteadyHandsDemo?.enabled && !profile.onboarding_completed) return;
 
     await Promise.all([
       loadEarnings(session, profile),

@@ -20,7 +20,7 @@ client.from('outreach_tasks').select('*').eq('assigned_to',userId).order('due_at
 client.from('outreach_notifications').select('*').eq('recipient_id',userId).order('created_at',{ascending:false}).limit(100),
 client.from('crm').select('id,company,callbackdate,callbackat,callback_owner_id').eq('callback_owner_id',userId).eq('stage','callback').limit(100)
 ]);
-if(tr.error||nr.error){const m=(tr.error||nr.error).message; if(panel)$('shToolsBody').innerHTML=banner('Unable to load demo tasks. '+m);return;}
+if(tr.error||nr.error){const m=(tr.error||nr.error).message; if(panel)$('shToolsBody').innerHTML=banner('Tasks and notifications are not ready. Run the separate Supabase SQL migration. '+m);return;}
 tasks=tr.data||[];notices=nr.data||[];callbacks=cr.error?[]:cr.data||[];progress();if(panel)render();
 notifyBrowser();}
 function notifyBrowser(){if(!('Notification'in window)||Notification.permission!=='granted')return; const seenKey='sh-task-alerted-'+userId;let seen={};try{seen=JSON.parse(localStorage.getItem(seenKey)||'{}')}catch{};

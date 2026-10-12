@@ -1,5 +1,4 @@
 (() => {
-  if (window.location.protocol === 'file:' || window.SteadyHandsDemo) return;
   const BUILD_VERSION = '20261002-update-popup-1';
   const VERSION_KEY = 'steadyhands-app-build';
 

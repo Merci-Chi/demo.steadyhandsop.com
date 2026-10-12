@@ -1,3 +1,4 @@
+if(window.SteadyHandsDemo?.enabled){document.documentElement.classList.remove('auth-checking');}else{
 // Checks the authenticated session on every non-login screen and restores the last app location.
 (() => {
   if (location.pathname.endsWith('/login.html')) return;
@@ -208,3 +209,5 @@
     }
   });
 })();
+
+}

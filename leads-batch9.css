@@ -109,13 +109,3 @@ body.page-leads .outreach-controls #crmLiveTotals{white-space:normal!important;}
   body.page-leads main.content{padding:14px 12px 100px!important;gap:12px!important;}
   body.page-leads .outreach-controls{padding:10px!important;}
 }
-
-/* Demo Leads: all records stay compressed, including the current selection. */
-body.page-leads #crmLeadCards .lead-card,
-body.page-leads #crmLeadCards .lead-card.selected-lead{padding:12px 16px!important;min-height:0!important;height:auto!important;}
-body.page-leads #crmLeadCards .lead-card .lead-head{min-height:0!important;height:auto!important;align-items:center!important;}
-body.page-leads #crmLeadCards .lead-card .lead-details{display:none!important;}
-body.page-leads #crmLeadCards .lead-card .compact-lead-meta{display:block!important;}
-body.page-leads #crmLeadCards .lead-card .contact-line{margin:5px 0!important;min-height:0!important;}
-body.page-leads #crmLeadCards .lead-card .company-icon{width:40px!important;height:40px!important;min-width:40px!important;}
-body.page-leads #crmLeadCards .lead-card .sh-select-outreach{margin:8px 0 0!important;min-height:34px!important;width:auto!important;}
